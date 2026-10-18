@@ -50,8 +50,8 @@ function CheckoutPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse(form);
-    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-    if (!payment) return toast.error("Choisis un mode de paiement");
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide"); return; }
+    if (!payment) { toast.error("Choisis un mode de paiement"); return; }
     setLoading(true);
     const { error } = await supabase.rpc("place_order", {
       _customer_name: parsed.data.name,
@@ -62,7 +62,7 @@ function CheckoutPage() {
       _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity })),
     });
     setLoading(false);
-    if (error) return toast.error(error.message || "Impossible d'envoyer la commande");
+    if (error) { toast.error(error.message || "Impossible d'envoyer la commande"); return; }
     cart.clear();
     navigate({ to: "/confirmation", search: { p: payment } });
   };

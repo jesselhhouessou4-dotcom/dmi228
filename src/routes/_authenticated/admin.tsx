@@ -162,7 +162,7 @@ function Dishes() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const p = parseInt(price, 10);
-    if (!name.trim() || isNaN(p) || p < 0) return toast.error("Nom et prix requis");
+    if (!name.trim() || isNaN(p) || p < 0) { toast.error("Nom et prix requis"); return; }
     setSaving(true);
     let image_url = editing?.image_url ?? null;
     if (file) {
@@ -177,7 +177,7 @@ function Dishes() {
       ? await supabase.from("dishes").update(payload).eq("id", editing.id)
       : await supabase.from("dishes").insert(payload);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(editing ? "Plat modifié" : "Plat ajouté");
     reset();
     refresh();
