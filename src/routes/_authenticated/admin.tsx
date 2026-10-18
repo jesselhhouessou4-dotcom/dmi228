@@ -168,7 +168,7 @@ function Dishes() {
     if (file) {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "")}`;
       const up = await supabase.storage.from("dishes").upload(path, file);
-      if (up.error) { setSaving(false); return toast.error("Échec de l'envoi de l'image"); }
+      if (up.error) { setSaving(false); toast.error("Échec de l'envoi de l'image"); return; }
       const signed = await supabase.storage.from("dishes").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
       image_url = signed.data?.signedUrl ?? null;
     }
