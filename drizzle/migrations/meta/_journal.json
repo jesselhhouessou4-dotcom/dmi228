@@ -15,6 +15,13 @@
       "when": 1792286285505,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792287131938,
+      "tag": "0002_restrict_dish_image_reads",
+      "breakpoints": true
     }
   ]
 }
