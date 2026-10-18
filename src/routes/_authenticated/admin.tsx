@@ -29,6 +29,7 @@ type Dish = { id: string; name: string; price: number; image_url: string | null;
 type OrderItem = { name: string; price: number; quantity: number };
 type Order = {
   id: string; customer_name: string; delivery_time: string; delivery_location: string; payment_method: string;
+  customer_phone: string | null; customer_email: string | null;
   note: string | null; items: OrderItem[]; total: number; status: string; created_at: string;
 };
 
@@ -128,9 +129,11 @@ function Orders() {
     qc.invalidateQueries({ queryKey: ["orders"] });
   };
 
-  if (!orders?.length) return <p className="mt-6 text-muted-foreground">Aucune commande pour le moment. Les nouvelles apparaîtront ici en temps réel.</p>;
+  if (!orders?.length) return <div>{alertBtn}<p className="mt-6 text-muted-foreground">Aucune commande pour le moment. Les nouvelles apparaîtront ici en temps réel.</p></div>;
 
   return (
+    <div>
+    {alertBtn}
     <div className="mt-4 grid gap-4 md:grid-cols-2">
       {orders.map((o) => (
         <div key={o.id} className={`rounded-[2rem] bg-card p-5 shadow-bubble ${o.status === "livrée" ? "opacity-60" : ""}`}>
@@ -148,6 +151,8 @@ function Orders() {
           </div>
           {o.note && <p className="mt-2 rounded-xl bg-secondary p-2 text-sm">📝 {o.note}</p>}
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+            {o.customer_phone && <p><b>Tél :</b> <a href={`tel:${o.customer_phone.replace(/\s/g, "")}`} className="font-bold text-primary">{o.customer_phone}</a></p>}
+            {o.customer_email && <p className="truncate"><b>E-mail :</b> {o.customer_email}</p>}
             <p><b>Heure :</b> {o.delivery_time}</p>
             <p><b>Lieu :</b> {o.delivery_location}</p>
             <p><b>Paiement :</b> {o.payment_method === "cash" ? "Cash à la livraison" : "Mobile money (Mixx)"}</p>
@@ -156,7 +161,22 @@ function Orders() {
         </div>
       ))}
     </div>
+    </div>
   );
+}
+
+function playChime() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    [880, 1175, 1568].forEach((f, i) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.frequency.value = f; o.type = "sine";
+      const t = ctx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.55);
+    });
+  } catch { /* audio unavailable */ }
 }
 
 function Dishes() {
