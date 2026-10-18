@@ -44,7 +44,9 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          customer_email: string | null
           customer_name: string
+          customer_phone: string | null
           delivery_location: string
           delivery_time: string
           id: string
@@ -56,7 +58,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_email?: string | null
           customer_name: string
+          customer_phone?: string | null
           delivery_location: string
           delivery_time: string
           id?: string
@@ -68,7 +72,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_email?: string | null
           customer_name?: string
+          customer_phone?: string | null
           delivery_location?: string
           delivery_time?: string
           id?: string
@@ -113,6 +119,19 @@ export type Database = {
       place_order: {
         Args: {
           _customer_name: string
+          _delivery_location: string
+          _delivery_time: string
+          _items: Json
+          _note: string
+          _payment_method: string
+        }
+        Returns: string
+      }
+      place_order_v2: {
+        Args: {
+          _customer_email: string
+          _customer_name: string
+          _customer_phone: string
           _delivery_location: string
           _delivery_time: string
           _items: Json

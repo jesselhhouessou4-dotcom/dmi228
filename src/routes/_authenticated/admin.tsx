@@ -29,6 +29,7 @@ type Dish = { id: string; name: string; price: number; image_url: string | null;
 type OrderItem = { name: string; price: number; quantity: number };
 type Order = {
   id: string; customer_name: string; delivery_time: string; delivery_location: string; payment_method: string;
+  customer_phone: string | null; customer_email: string | null;
   note: string | null; items: OrderItem[]; total: number; status: string; created_at: string;
 };
 
@@ -90,17 +91,37 @@ function Orders() {
     },
   });
 
+  const [soundOn, setSoundOn] = useState(false);
+  const enableAlerts = async () => {
+    playChime();
+    if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission();
+    setSoundOn(true);
+    toast.success("Alertes activées");
+  };
+
   useEffect(() => {
     const ch = supabase
       .channel("orders-admin")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
         const o = payload.new as Order;
-        toast.success(`Nouvelle commande de ${o.customer_name} — ${formatPrice(o.total)}`, { icon: <Bell className="h-4 w-4" /> });
+        const msg = `Nouvelle commande de ${o.customer_name} — ${formatPrice(o.total)}`;
+        toast.success(msg, { icon: <Bell className="h-4 w-4" />, duration: 15000 });
+        playChime();
+        navigator.vibrate?.([300, 150, 300]);
+        if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+          try { new Notification("Don't mind it ! — Nouvelle commande", { body: msg, icon: "/favicon.png" }); } catch { /* mobile may block */ }
+        }
         qc.invalidateQueries({ queryKey: ["orders"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
+
+  const alertBtn = (
+    <button onClick={enableAlerts} className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${soundOn ? "bg-secondary text-secondary-foreground" : "bg-primary text-primary-foreground"}`}>
+      <Bell className="h-4 w-4" /> {soundOn ? "Alertes sonores actives" : "Activer les alertes sonores"}
+    </button>
+  );
 
   const toggleStatus = async (o: Order) => {
     const status = o.status === "livrée" ? "nouvelle" : "livrée";
@@ -108,9 +129,11 @@ function Orders() {
     qc.invalidateQueries({ queryKey: ["orders"] });
   };
 
-  if (!orders?.length) return <p className="mt-6 text-muted-foreground">Aucune commande pour le moment. Les nouvelles apparaîtront ici en temps réel.</p>;
+  if (!orders?.length) return <div>{alertBtn}<p className="mt-6 text-muted-foreground">Aucune commande pour le moment. Les nouvelles apparaîtront ici en temps réel.</p></div>;
 
   return (
+    <div>
+    {alertBtn}
     <div className="mt-4 grid gap-4 md:grid-cols-2">
       {orders.map((o) => (
         <div key={o.id} className={`rounded-[2rem] bg-card p-5 shadow-bubble ${o.status === "livrée" ? "opacity-60" : ""}`}>
@@ -128,6 +151,8 @@ function Orders() {
           </div>
           {o.note && <p className="mt-2 rounded-xl bg-secondary p-2 text-sm">📝 {o.note}</p>}
           <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+            {o.customer_phone && <p><b>Tél :</b> <a href={`tel:${o.customer_phone.replace(/\s/g, "")}`} className="font-bold text-primary">{o.customer_phone}</a></p>}
+            {o.customer_email && <p className="truncate"><b>E-mail :</b> {o.customer_email}</p>}
             <p><b>Heure :</b> {o.delivery_time}</p>
             <p><b>Lieu :</b> {o.delivery_location}</p>
             <p><b>Paiement :</b> {o.payment_method === "cash" ? "Cash à la livraison" : "Mobile money (Mixx)"}</p>
@@ -136,7 +161,22 @@ function Orders() {
         </div>
       ))}
     </div>
+    </div>
   );
+}
+
+function playChime() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    [880, 1175, 1568].forEach((f, i) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.frequency.value = f; o.type = "sine";
+      const t = ctx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 0.55);
+    });
+  } catch { /* audio unavailable */ }
 }
 
 function Dishes() {
