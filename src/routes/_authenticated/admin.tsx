@@ -90,17 +90,37 @@ function Orders() {
     },
   });
 
+  const [soundOn, setSoundOn] = useState(false);
+  const enableAlerts = async () => {
+    playChime();
+    if ("Notification" in window && Notification.permission === "default") await Notification.requestPermission();
+    setSoundOn(true);
+    toast.success("Alertes activées");
+  };
+
   useEffect(() => {
     const ch = supabase
       .channel("orders-admin")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
         const o = payload.new as Order;
-        toast.success(`Nouvelle commande de ${o.customer_name} — ${formatPrice(o.total)}`, { icon: <Bell className="h-4 w-4" /> });
+        const msg = `Nouvelle commande de ${o.customer_name} — ${formatPrice(o.total)}`;
+        toast.success(msg, { icon: <Bell className="h-4 w-4" />, duration: 15000 });
+        playChime();
+        navigator.vibrate?.([300, 150, 300]);
+        if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+          try { new Notification("Don't mind it ! — Nouvelle commande", { body: msg, icon: "/favicon.png" }); } catch { /* mobile may block */ }
+        }
         qc.invalidateQueries({ queryKey: ["orders"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
+
+  const alertBtn = (
+    <button onClick={enableAlerts} className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${soundOn ? "bg-secondary text-secondary-foreground" : "bg-primary text-primary-foreground"}`}>
+      <Bell className="h-4 w-4" /> {soundOn ? "Alertes sonores actives" : "Activer les alertes sonores"}
+    </button>
+  );
 
   const toggleStatus = async (o: Order) => {
     const status = o.status === "livrée" ? "nouvelle" : "livrée";

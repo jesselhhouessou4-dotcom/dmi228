@@ -24,6 +24,8 @@ export const Route = createFileRoute("/commande")({
 
 const schema = z.object({
   name: z.string().trim().min(1, "Indique ton nom").max(100),
+  phone: z.string().trim().regex(/^\+?[0-9 ]{8,20}$/, "Indique un numéro de téléphone valide"),
+  email: z.union([z.literal(""), z.string().trim().email("Adresse e-mail invalide").max(255)]),
   time: z.string().trim().min(1, "Indique l'heure souhaitée").max(50),
   location: z.string().trim().min(3, "Indique le lieu précis").max(300),
 });
@@ -31,7 +33,7 @@ const schema = z.object({
 function CheckoutPage() {
   const cart = useCart();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", time: "", location: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", time: "", location: "" });
   const [payment, setPayment] = useState<"mobile_money" | "cash" | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,8 +55,10 @@ function CheckoutPage() {
     if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide"); return; }
     if (!payment) { toast.error("Choisis un mode de paiement"); return; }
     setLoading(true);
-    const { error } = await supabase.rpc("place_order", {
+    const { error } = await supabase.rpc("place_order_v2", {
       _customer_name: parsed.data.name,
+      _customer_phone: parsed.data.phone,
+      _customer_email: parsed.data.email,
       _delivery_time: parsed.data.time,
       _delivery_location: parsed.data.location,
       _payment_method: payment,
@@ -77,6 +81,8 @@ function CheckoutPage() {
         <h1 className="text-3xl font-black">Livraison</h1>
         <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
           <Field label="Ton nom"><Input value={form.name} maxLength={100} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 rounded-xl" /></Field>
+          <Field label="Ton numéro de téléphone"><Input type="tel" value={form.phone} maxLength={20} placeholder="90 00 00 00" onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 rounded-xl" /></Field>
+          <Field label="Ton e-mail (facultatif, pour recevoir le reçu)"><Input type="email" value={form.email} maxLength={255} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Heure de réception souhaitée"><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Lieu précis de livraison"><Input value={form.location} maxLength={300} placeholder="Quartier, rue, repère…" onChange={(e) => setForm({ ...form, location: e.target.value })} className="h-12 rounded-xl" /></Field>
         </div>
