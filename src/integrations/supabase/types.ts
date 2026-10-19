@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          ingredients: string | null
           name: string
           price: number
           published: boolean
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          ingredients?: string | null
           name: string
           price: number
           published?: boolean
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          ingredients?: string | null
           name?: string
           price?: number
           published?: boolean
