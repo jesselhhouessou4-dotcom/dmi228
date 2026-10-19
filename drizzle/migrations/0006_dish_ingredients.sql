@@ -1,0 +1,1 @@
+ALTER TABLE public.dishes ADD COLUMN ingredients text;

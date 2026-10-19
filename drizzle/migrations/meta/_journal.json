@@ -43,6 +43,13 @@
       "when": 1792369639662,
       "tag": "0005_order_telegram_notified",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792370631302,
+      "tag": "0006_dish_ingredients",
+      "breakpoints": true
     }
   ]
 }
