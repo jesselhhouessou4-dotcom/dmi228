@@ -35,6 +35,7 @@ const schema = z.object({
 function CheckoutPage() {
   const cart = useCart();
   const navigate = useNavigate();
+  const notify = useServerFn(notifyNewOrder);
   const [form, setForm] = useState({ name: "", phone: "", email: "", time: "", location: "" });
   const [payment, setPayment] = useState<"mobile_money" | "cash" | null>(null);
   const [loading, setLoading] = useState(false);
