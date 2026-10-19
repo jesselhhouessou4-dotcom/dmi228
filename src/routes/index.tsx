@@ -1,4 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { UtensilsCrossed } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { formatPrice } from "@/lib/cart";
 import logo from "@/assets/dmi-logo.png.asset.json";
 import hero from "@/assets/hero-food.jpg";
 
@@ -37,6 +41,36 @@ function Index() {
           <img src={hero} alt="Plats africains appétissants" width={1280} height={896} className="aspect-[4/3] w-full rounded-[2.5rem] object-cover shadow-bubble" />
         </div>
       </div>
+      <Featured />
     </main>
+  );
+}
+
+function Featured() {
+  const { data } = useQuery({
+    queryKey: ["dishes", "featured"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("dishes").select("id,name,price,image_url,category").eq("published", true).order("created_at", { ascending: false });
+      if (error) throw error;
+      return [...data.filter((d) => d.category === "plat").slice(0, 3), ...data.filter((d) => d.category === "dessert").slice(0, 3)];
+    },
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-5xl px-6 pb-16">
+      <h2 className="text-3xl font-black">Nos plats du moment</h2>
+      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+        {data.map((d) => (
+          <Link key={d.id} to="/menu" hash={d.category === "dessert" ? "desserts" : "plats"} className="overflow-hidden rounded-[2rem] bg-card text-card-foreground shadow-bubble">
+            {d.image_url ? <img src={d.image_url} alt={d.name} loading="lazy" className="aspect-[4/3] w-full object-cover" /> : <div className="grid aspect-[4/3] place-items-center bg-secondary text-secondary-foreground"><UtensilsCrossed className="h-8 w-8" /></div>}
+            <div className="p-4">
+              <span className="text-xs font-bold uppercase text-muted-foreground">{d.category === "dessert" ? "Dessert" : "Plat"}</span>
+              <p className="font-bold">{d.name}</p>
+              <p className="font-semibold text-primary">{formatPrice(d.price)}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-type Dish = { id: string; name: string; price: number; image_url: string | null; published: boolean };
+type Dish = { id: string; name: string; price: number; image_url: string | null; published: boolean; category: "plat" | "dessert" };
 type OrderItem = { name: string; price: number; quantity: number };
 type Order = {
   id: string; customer_name: string; delivery_time: string; delivery_location: string; payment_method: string;
@@ -184,6 +184,7 @@ function Dishes() {
   const [editing, setEditing] = useState<Dish | null>(null);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [category, setCategory] = useState<"plat" | "dessert">("plat");
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -196,7 +197,7 @@ function Dishes() {
     },
   });
 
-  const reset = () => { setEditing(null); setName(""); setPrice(""); setFile(null); };
+  const reset = () => { setEditing(null); setName(""); setPrice(""); setCategory("plat"); setFile(null); };
   const refresh = () => qc.invalidateQueries({ queryKey: ["dishes"] });
 
   const save = async (e: React.FormEvent) => {
@@ -212,7 +213,7 @@ function Dishes() {
       const signed = await supabase.storage.from("dishes").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
       image_url = signed.data?.signedUrl ?? null;
     }
-    const payload = { name: name.trim(), price: p, image_url };
+    const payload = { name: name.trim(), price: p, image_url, category };
     const { error } = editing
       ? await supabase.from("dishes").update(payload).eq("id", editing.id)
       : await supabase.from("dishes").insert(payload);
@@ -240,6 +241,16 @@ function Dishes() {
         <h2 className="text-xl font-black">{editing ? "Modifier le plat" : "Nouveau plat"}</h2>
         <Input placeholder="Nom" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} className="h-11 rounded-xl" />
         <Input placeholder="Prix (FCFA)" type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className="h-11 rounded-xl" />
+        <div>
+          <p className="mb-1 text-sm font-semibold">Catégorie</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["plat", "dessert"] as const).map((c) => (
+              <button key={c} type="button" onClick={() => setCategory(c)} className={`h-10 rounded-full border-2 text-sm font-bold ${category === c ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                {c === "plat" ? "Plat" : "Dessert"}
+              </button>
+            ))}
+          </div>
+        </div>
         <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="rounded-xl" />
         <button disabled={saving} className="h-11 w-full rounded-full bg-primary font-bold text-primary-foreground disabled:opacity-60">{saving ? "Enregistrement…" : "Enregistrer"}</button>
         {editing && <button type="button" onClick={reset} className="w-full text-sm text-muted-foreground underline">Annuler</button>}
@@ -250,13 +261,13 @@ function Dishes() {
             {d.image_url ? <img src={d.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" /> : <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-secondary"><UtensilsCrossed className="h-5 w-5" /></div>}
             <div className="min-w-0 flex-1">
               <p className="truncate font-bold">{d.name}</p>
-              <p className="text-sm text-muted-foreground">{formatPrice(d.price)}</p>
+              <p className="text-sm text-muted-foreground">{formatPrice(d.price)} · {d.category === "dessert" ? "Dessert" : "Plat"}</p>
             </div>
             <label className="flex shrink-0 items-center gap-2 text-xs">
               <Switch checked={d.published} onCheckedChange={(v) => togglePublished(d, v)} />
               <span className="hidden sm:inline">{d.published ? "Publié" : "Masqué"}</span>
             </label>
-            <button onClick={() => { setEditing(d); setName(d.name); setPrice(String(d.price)); setFile(null); }} className="shrink-0 rounded-full p-2 hover:bg-secondary" aria-label="Modifier"><Pencil className="h-4 w-4" /></button>
+            <button onClick={() => { setEditing(d); setName(d.name); setPrice(String(d.price)); setCategory(d.category); setFile(null); }} className="shrink-0 rounded-full p-2 hover:bg-secondary" aria-label="Modifier"><Pencil className="h-4 w-4" /></button>
             <button onClick={() => remove(d)} className="shrink-0 rounded-full p-2 text-destructive hover:bg-secondary" aria-label="Supprimer"><Trash2 className="h-4 w-4" /></button>
           </div>
         ))}

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       dishes: {
         Row: {
+          category: string
           created_at: string
           id: string
           image_url: string | null
@@ -24,6 +25,7 @@ export type Database = {
           published: boolean
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           image_url?: string | null
@@ -32,6 +34,7 @@ export type Database = {
           published?: boolean
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           image_url?: string | null
@@ -54,6 +57,7 @@ export type Database = {
           note: string | null
           payment_method: string
           status: string
+          telegram_notified: boolean
           total: number
         }
         Insert: {
@@ -68,6 +72,7 @@ export type Database = {
           note?: string | null
           payment_method: string
           status?: string
+          telegram_notified?: boolean
           total: number
         }
         Update: {
@@ -82,7 +87,26 @@ export type Database = {
           note?: string | null
           payment_method?: string
           status?: string
+          telegram_notified?: boolean
           total?: number
+        }
+        Relationships: []
+      }
+      telegram_settings: {
+        Row: {
+          chat_id: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          chat_id: number
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: number
+          id?: number
+          updated_at?: string
         }
         Relationships: []
       }

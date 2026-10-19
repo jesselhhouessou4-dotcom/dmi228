@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN telegram_notified boolean NOT NULL DEFAULT false;
