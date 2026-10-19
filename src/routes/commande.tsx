@@ -7,6 +7,8 @@ import { useCart, formatPrice } from "@/lib/cart";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Input } from "@/components/ui/input";
 import qr from "@/assets/mixx-qr.jpg.asset.json";
+import { useServerFn } from "@tanstack/react-start";
+import { notifyNewOrder } from "@/lib/telegram.functions";
 
 export const Route = createFileRoute("/commande")({
   head: () => ({
@@ -55,7 +57,7 @@ function CheckoutPage() {
     if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide"); return; }
     if (!payment) { toast.error("Choisis un mode de paiement"); return; }
     setLoading(true);
-    const { error } = await supabase.rpc("place_order_v2", {
+    const { data: orderId, error } = await supabase.rpc("place_order_v2", {
       _customer_name: parsed.data.name,
       _customer_phone: parsed.data.phone,
       _customer_email: parsed.data.email,
@@ -65,6 +67,9 @@ function CheckoutPage() {
       _note: cart.note,
       _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity })),
     });
+    if (!error && orderId) {
+      try { await notify({ data: { orderId: orderId as string } }); } catch (e) { console.error(e); }
+    }
     setLoading(false);
     if (error) { toast.error(error.message || "Impossible d'envoyer la commande"); return; }
     cart.clear();
