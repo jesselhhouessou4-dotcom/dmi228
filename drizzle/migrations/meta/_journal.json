@@ -29,6 +29,13 @@
       "when": 1792287617594,
       "tag": "0003_order_contact_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792369627433,
+      "tag": "0004_dish_category_and_telegram",
+      "breakpoints": true
     }
   ]
 }
