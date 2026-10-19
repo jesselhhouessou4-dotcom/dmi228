@@ -26,7 +26,7 @@ export const Route = createFileRoute("/menu")({
   component: MenuPage,
 });
 
-type Dish = { id: string; name: string; price: number; image_url: string | null };
+type Dish = { id: string; name: string; price: number; image_url: string | null; category: string };
 
 function DishCard({ dish }: { dish: Dish }) {
   const { add } = useCart();
@@ -71,7 +71,7 @@ function MenuPage() {
   const { data: dishes, isLoading } = useQuery({
     queryKey: ["dishes", "published"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("dishes").select("id,name,price,image_url").eq("published", true).order("created_at");
+      const { data, error } = await supabase.from("dishes").select("id,name,price,image_url,category").eq("published", true).order("created_at");
       if (error) throw error;
       return data as Dish[];
     },
@@ -125,12 +125,26 @@ function MenuPage() {
       <SiteHeader right={cartButton} />
       <main className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-3xl font-black">Le menu</h1>
-        <p className="mt-1 text-muted-foreground">Touche un plat pour l'ajouter au panier.</p>
+        <p className="mt-1 text-muted-foreground">Touche un article pour l'ajouter au panier.</p>
         {isLoading && <p className="mt-8 text-muted-foreground">Chargement…</p>}
         {dishes && dishes.length === 0 && <p className="mt-8 text-muted-foreground">Aucun plat disponible pour le moment.</p>}
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {dishes?.map((d) => <DishCard key={d.id} dish={d} />)}
-        </div>
+        <nav className="sticky top-[72px] z-10 mt-5 flex gap-2 bg-background/90 py-2 backdrop-blur">
+          {[["plats", "Plats"], ["desserts", "Desserts"]].map(([id, label]) => (
+            <a key={id} href={`#${id}`} className="rounded-full bg-secondary px-5 py-2 font-bold text-secondary-foreground hover:bg-primary hover:text-primary-foreground">{label}</a>
+          ))}
+        </nav>
+        {[["plats", "Plats", "plat"], ["desserts", "Desserts", "dessert"]].map(([id, label, cat]) => {
+          const list = dishes?.filter((d) => d.category === cat) ?? [];
+          return (
+            <section key={id} id={id} className="scroll-mt-32 pt-6">
+              <h2 className="text-2xl font-black">{label}</h2>
+              {dishes && list.length === 0 && <p className="mt-3 text-muted-foreground">Rien pour le moment.</p>}
+              <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {list.map((d) => <DishCard key={d.id} dish={d} />)}
+              </div>
+            </section>
+          );
+        })}
       </main>
       {cart.count > 0 && !open && (
         <button onClick={() => setOpen(true)} className="fixed inset-x-4 bottom-4 z-20 mx-auto flex h-14 max-w-md items-center justify-between rounded-full bg-primary px-6 font-bold text-primary-foreground shadow-bubble">
