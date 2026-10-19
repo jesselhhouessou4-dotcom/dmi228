@@ -57,6 +57,7 @@ export type Database = {
           note: string | null
           payment_method: string
           status: string
+          telegram_notified: boolean
           total: number
         }
         Insert: {
@@ -71,6 +72,7 @@ export type Database = {
           note?: string | null
           payment_method: string
           status?: string
+          telegram_notified?: boolean
           total: number
         }
         Update: {
@@ -85,6 +87,7 @@ export type Database = {
           note?: string | null
           payment_method?: string
           status?: string
+          telegram_notified?: boolean
           total?: number
         }
         Relationships: []
