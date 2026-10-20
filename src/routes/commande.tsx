@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { Copy, GraduationCap, MapPin, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart, formatPrice } from "@/lib/cart";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -24,20 +25,30 @@ export const Route = createFileRoute("/commande")({
   component: CheckoutPage,
 });
 
+const MIXX_NUMBER = "99848522";
+
 const schema = z.object({
   name: z.string().trim().min(1, "Indique ton nom").max(100),
   phone: z.string().trim().regex(/^\+?[0-9 ]{8,20}$/, "Indique un numéro de téléphone valide"),
   email: z.union([z.literal(""), z.string().trim().email("Adresse e-mail invalide").max(255)]),
   time: z.string().trim().min(1, "Indique l'heure souhaitée").max(50),
-  location: z.string().trim().min(3, "Indique le lieu précis").max(300),
 });
+
+async function copy(text: string, label: string) {
+  try { await navigator.clipboard.writeText(text); toast.success(`${label} copié`); } catch { toast.error("Copie impossible, note-le à la main"); }
+}
 
 function CheckoutPage() {
   const cart = useCart();
   const navigate = useNavigate();
   const notify = useServerFn(notifyNewOrder);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", time: "", location: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", time: "" });
+  const [dtype, setDtype] = useState<"etudiant" | "externe" | null>(null);
+  const [place, setPlace] = useState("");
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoState, setGeoState] = useState<"idle" | "loading" | "error">("idle");
   const [payment, setPayment] = useState<"mobile_money" | "cash" | null>(null);
+  const [noScan, setNoScan] = useState(false);
   const [loading, setLoading] = useState(false);
 
   if (cart.items.length === 0) {
@@ -52,21 +63,40 @@ function CheckoutPage() {
     );
   }
 
+  const locate = () => {
+    if (!("geolocation" in navigator)) { setGeoState("error"); toast.error("Localisation indisponible, décris le lieu à la main"); return; }
+    setGeoState("loading");
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setGeo({ lat: p.coords.latitude, lng: p.coords.longitude }); setGeoState("idle"); toast.success("Position trouvée"); },
+      () => { setGeoState("error"); toast.error("Position refusée ou introuvable, décris le lieu à la main"); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+  const mapLink = geo ? `https://www.google.com/maps?q=${geo.lat.toFixed(6)},${geo.lng.toFixed(6)}` : "";
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide"); return; }
+    if (!dtype) { toast.error("Indique si tu es étudiant(e) ou externe"); return; }
+    const p = place.trim();
+    if (dtype === "etudiant" && p.length < 3) { toast.error("Indique le lieu précis sur le campus"); return; }
+    if (dtype === "externe" && !geo && p.length < 3) { toast.error("Partage ta position ou décris le lieu"); return; }
     if (!payment) { toast.error("Choisis un mode de paiement"); return; }
+    const location = dtype === "etudiant"
+      ? `Étudiant(e) — ${p}`
+      : `Externe — ${[p, mapLink].filter(Boolean).join(" — ")}`;
     setLoading(true);
-    const { data: orderId, error } = await supabase.rpc("place_order_v2", {
+    const { data: orderId, error } = await supabase.rpc("place_order_v3", {
       _customer_name: parsed.data.name,
       _customer_phone: parsed.data.phone,
       _customer_email: parsed.data.email,
       _delivery_time: parsed.data.time,
-      _delivery_location: parsed.data.location,
+      _delivery_type: dtype,
+      _delivery_location: location.slice(0, 600),
       _payment_method: payment,
       _note: cart.note,
-      _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity })),
+      _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity, format: i.format ?? null })),
     });
     if (!error && orderId) {
       try { await notify({ data: { orderId: orderId as string } }); } catch (e) { console.error(e); }
@@ -88,9 +118,29 @@ function CheckoutPage() {
         <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
           <Field label="Ton nom"><Input value={form.name} maxLength={100} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Ton numéro de téléphone"><Input type="tel" value={form.phone} maxLength={20} placeholder="90 00 00 00" onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 rounded-xl" /></Field>
-          <Field label="Ton e-mail (facultatif, pour recevoir le reçu)"><Input type="email" value={form.email} maxLength={255} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-xl" /></Field>
+          <Field label="Ton e-mail (facultatif)"><Input type="email" value={form.email} maxLength={255} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Heure de réception souhaitée"><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="h-12 rounded-xl" /></Field>
-          <Field label="Lieu précis de livraison"><Input value={form.location} maxLength={300} placeholder="Quartier, rue, repère…" onChange={(e) => setForm({ ...form, location: e.target.value })} className="h-12 rounded-xl" /></Field>
+        </div>
+
+        <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
+          <p className="font-bold">Où te livrer ?</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" className={choice(dtype === "etudiant")} onClick={() => setDtype("etudiant")}><GraduationCap className="mb-1 h-5 w-5" />Je suis étudiant(e)</button>
+            <button type="button" className={choice(dtype === "externe")} onClick={() => setDtype("externe")}><MapPin className="mb-1 h-5 w-5" />Je suis externe</button>
+          </div>
+          {dtype === "etudiant" && (
+            <Field label="Lieu sur le campus"><Input value={place} maxLength={300} placeholder="Bâtiment, salle, amphi, repère…" onChange={(e) => setPlace(e.target.value)} className="h-12 rounded-xl" /></Field>
+          )}
+          {dtype === "externe" && (
+            <div className="space-y-3">
+              <button type="button" onClick={locate} disabled={geoState === "loading"} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary font-bold text-primary-foreground disabled:opacity-60">
+                <Navigation className="h-4 w-4" /> {geoState === "loading" ? "Recherche…" : geo ? "Position enregistrée ✓ (actualiser)" : "Utiliser ma position"}
+              </button>
+              {geo && <a href={mapLink} target="_blank" rel="noreferrer" className="block text-center text-sm font-semibold text-primary underline">Voir sur la carte</a>}
+              {geoState === "error" && <p className="text-sm text-destructive">Position indisponible : décris le lieu ci-dessous.</p>}
+              <Field label={geo ? "Précisions (facultatif)" : "Lieu précis de livraison"}><Input value={place} maxLength={300} placeholder="Quartier, maison, portail, repère…" onChange={(e) => setPlace(e.target.value)} className="h-12 rounded-xl" /></Field>
+            </div>
+          )}
         </div>
 
         <h2 className="text-2xl font-black">Paiement</h2>
@@ -99,9 +149,25 @@ function CheckoutPage() {
           <button type="button" className={choice(payment === "cash")} onClick={() => setPayment("cash")}>Cash</button>
         </div>
         {payment === "mobile_money" && (
-          <div className="rounded-[2rem] bg-card p-5 text-center shadow-bubble">
+          <div className="space-y-4 rounded-[2rem] bg-card p-5 text-center shadow-bubble">
+            <p className="rounded-xl bg-destructive/10 p-3 text-sm font-bold text-destructive">⚠️ Merci d'inclure les frais de retrait/transfert lors de votre envoi.</p>
             <p className="font-semibold">Scanne le code QR Mixx</p>
-            <img src={qr.url} alt="Code QR Mixx" className="mx-auto my-4 h-52 w-52 rounded-xl" />
+            <img src={qr.url} alt="Code QR Mixx" className="mx-auto h-52 w-52 rounded-xl" />
+            <button type="button" onClick={() => setNoScan((s) => !s)} className="text-sm font-bold text-primary underline">Je ne peux pas scanner</button>
+            {noScan && (
+              <div className="space-y-3 rounded-2xl bg-secondary p-4 text-left text-secondary-foreground">
+                <CopyRow label="Numéro Mixx" value="99 84 85 22" raw={MIXX_NUMBER} />
+                <CopyRow label="Montant exact" value={formatPrice(cart.total)} raw={String(cart.total)} />
+                <p className="text-xs font-semibold">+ les frais de transfert à ajouter</p>
+                <a href="tel:*145%23" className="flex h-11 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground">Ouvrir Mixx (*145#)</a>
+                <ol className="list-decimal space-y-1 pl-5 text-sm">
+                  <li>Ouvre l'application Mixx ou compose *145#.</li>
+                  <li>Choisis « Transfert d'argent » et colle le numéro 99 84 85 22.</li>
+                  <li>Entre le montant exact plus les frais, puis valide.</li>
+                  <li>Envoie la capture du paiement au 99 84 85 22.</li>
+                </ol>
+              </div>
+            )}
             <p className="text-sm">Après le paiement, envoie la capture d'écran au <a href="tel:+22899848522" className="font-bold text-primary">99 84 85 22</a></p>
           </div>
         )}
@@ -109,7 +175,7 @@ function CheckoutPage() {
 
         <div className="rounded-[2rem] bg-card p-5 shadow-bubble">
           {cart.items.map((i) => (
-            <div key={i.dish_id} className="flex justify-between py-1 text-sm"><span>{i.quantity} × {i.name}</span><span>{formatPrice(i.price * i.quantity)}</span></div>
+            <div key={i.key} className="flex justify-between py-1 text-sm"><span>{i.quantity} × {i.name}</span><span>{formatPrice(i.price * i.quantity)}</span></div>
           ))}
           {cart.note && <p className="mt-2 text-sm italic text-muted-foreground">« {cart.note} »</p>}
           <div className="mt-3 flex justify-between border-t pt-3 text-lg font-bold"><span>Total</span><span>{formatPrice(cart.total)}</span></div>
@@ -119,6 +185,15 @@ function CheckoutPage() {
           {loading ? "Envoi…" : "Envoyer ma commande"}
         </button>
       </form>
+    </div>
+  );
+}
+
+function CopyRow({ label, value, raw }: { label: string; value: string; raw: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <div><p className="text-xs">{label}</p><p className="text-lg font-black">{value}</p></div>
+      <button type="button" onClick={() => copy(raw, label)} className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-2 text-xs font-bold"><Copy className="h-3 w-3" /> Copier</button>
     </div>
   );
 }
