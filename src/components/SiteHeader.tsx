@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import logo from "@/assets/dmi-logo.png.asset.json";
+import logo from "@/assets/dmi-new-logo.png.asset.json";
 import type { ReactNode } from "react";
 
 export function SiteHeader({ right }: { right?: ReactNode }) {

@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Minus, Plus, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { ChevronDown, CupSoda, Minus, Plus, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart, formatPrice } from "@/lib/cart";
+import { CATEGORIES, DISH_COLUMNS, categoryLabel, type Dish } from "@/lib/dishes";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -16,9 +18,9 @@ export const Route = createFileRoute("/menu")({
   head: () => ({
     meta: [
       { title: "Menu — Don't mind it !" },
-      { name: "description", content: "Choisis tes plats et ajoute-les au panier." },
+      { name: "description", content: "Plats, desserts et boissons : choisis et ajoute au panier." },
       { property: "og:title", content: "Menu — Don't mind it !" },
-      { property: "og:description", content: "Découvre nos plats du jour." },
+      { property: "og:description", content: "Découvre nos plats, desserts et boissons." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -26,40 +28,149 @@ export const Route = createFileRoute("/menu")({
   component: MenuPage,
 });
 
-type Dish = { id: string; name: string; price: number; image_url: string | null; category: string };
-
-function DishCard({ dish }: { dish: Dish }) {
+function useAddDish() {
   const { add } = useCart();
-  const [qty, setQty] = useState(1);
-  const addToCart = () => {
-    add({ dish_id: dish.id, name: dish.name, price: dish.price, image_url: dish.image_url }, qty);
-    toast.success(`${qty} × ${dish.name} ajouté au panier`);
-    setQty(1);
+  return (dish: Dish, qty: number, formatName?: string | null) => {
+    const f = dish.formats?.find((x) => x.name === formatName);
+    add({
+      dish_id: dish.id, name: f ? `${dish.name} (${f.name})` : dish.name, price: f ? f.price : dish.price,
+      image_url: dish.image_url, format: f?.name ?? null, category: dish.category,
+    }, qty);
+    toast.success(`${qty} × ${dish.name}${f ? ` (${f.name})` : ""} ajouté au panier`);
   };
+}
+
+function Img({ dish, className }: { dish: Dish; className: string }) {
+  return dish.image_url ? (
+    <img src={dish.image_url} alt={dish.name} loading="lazy" className={`${className} object-cover`} />
+  ) : (
+    <div className={`${className} flex items-center justify-center bg-secondary text-secondary-foreground`}>
+      {dish.category === "boisson" ? <CupSoda className="h-10 w-10" /> : <UtensilsCrossed className="h-10 w-10" />}
+    </div>
+  );
+}
+
+function Qty({ qty, setQty }: { qty: number; setQty: (n: number) => void }) {
   return (
-    <div className="overflow-hidden rounded-[2rem] bg-card shadow-bubble">
-      <button onClick={addToCart} className="block w-full text-left" aria-label={`Ajouter ${dish.name}`}>
-        {dish.image_url ? (
-          <img src={dish.image_url} alt={dish.name} loading="lazy" className="aspect-[4/3] w-full object-cover" />
-        ) : (
-          <div className="flex aspect-[4/3] w-full items-center justify-center bg-secondary text-secondary-foreground">
-            <UtensilsCrossed className="h-10 w-10" />
-          </div>
-        )}
+    <div className="flex items-center gap-1 rounded-full bg-secondary p-1">
+      <button type="button" onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Moins"><Minus className="h-4 w-4" /></button>
+      <span className="w-6 text-center font-bold">{qty}</span>
+      <button type="button" onClick={() => setQty(Math.min(99, qty + 1))} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Plus"><Plus className="h-4 w-4" /></button>
+    </div>
+  );
+}
+
+function FormatPicker({ dish, value, onChange }: { dish: Dish; value: string | null; onChange: (v: string) => void }) {
+  if (!dish.formats?.length) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {dish.formats.map((f) => (
+        <button key={f.name} type="button" onClick={() => onChange(f.name)}
+          className={`rounded-full border-2 px-3 py-1 text-xs font-bold ${value === f.name ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"}`}>
+          {f.name} · {formatPrice(f.price)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function DishCard({ dish, onOpen }: { dish: Dish; onOpen: () => void }) {
+  const addDish = useAddDish();
+  const [qty, setQty] = useState(1);
+  const [fmt, setFmt] = useState<string | null>(dish.formats?.[0]?.name ?? null);
+  const [showIng, setShowIng] = useState(false);
+  const out = !dish.is_available;
+  const price = dish.formats?.find((f) => f.name === fmt)?.price ?? dish.price;
+  return (
+    <div className={`overflow-hidden rounded-[2rem] bg-card shadow-bubble ${out ? "opacity-60 grayscale" : ""}`}>
+      <button onClick={onOpen} className="relative block w-full text-left" aria-label={`Voir ${dish.name}`}>
+        <Img dish={dish} className="aspect-[4/3] w-full" />
+        {out && <span className="absolute left-3 top-3 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">Épuisé</span>}
         <div className="px-5 pt-4">
           <h3 className="text-lg font-bold">{dish.name}</h3>
-          <p className="mt-1 font-semibold text-primary">{formatPrice(dish.price)}</p>
+          <p className="mt-1 font-semibold text-primary">{formatPrice(price)}</p>
         </div>
       </button>
+      <div className="space-y-3 px-5 pt-2">
+        {dish.ingredients && (
+          <div>
+            <button type="button" onClick={() => setShowIng((s) => !s)} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground">
+              Ingrédients <ChevronDown className={`h-3 w-3 transition ${showIng ? "rotate-180" : ""}`} />
+            </button>
+            {showIng && <p className="mt-2 text-sm text-muted-foreground">{dish.ingredients}</p>}
+          </div>
+        )}
+        {!out && <FormatPicker dish={dish} value={fmt} onChange={setFmt} />}
+      </div>
       <div className="flex items-center justify-between gap-2 p-5 pt-3">
-        <div className="flex items-center gap-1 rounded-full bg-secondary p-1">
-          <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Moins"><Minus className="h-4 w-4" /></button>
-          <span className="w-6 text-center font-bold">{qty}</span>
-          <button onClick={() => setQty((q) => Math.min(99, q + 1))} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Plus"><Plus className="h-4 w-4" /></button>
-        </div>
-        <button onClick={addToCart} className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Ajouter</button>
+        {out ? <p className="text-sm font-semibold text-muted-foreground">Indisponible pour le moment</p> : (
+          <>
+            <Qty qty={qty} setQty={setQty} />
+            <button onClick={() => { addDish(dish, qty, fmt); setQty(1); }} className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Ajouter</button>
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+function DrinkSuggest({ drinks }: { drinks: Dish[] }) {
+  const cart = useCart();
+  const addDish = useAddDish();
+  const list = drinks.filter((d) => d.is_available);
+  if (cart.hasDrink || list.length === 0) return null;
+  return (
+    <div className="rounded-2xl border-2 border-dashed border-primary/40 p-3">
+      <p className="mb-2 flex items-center gap-2 font-bold"><CupSoda className="h-4 w-4" /> Ajouter une boisson ?</p>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {list.map((d) => {
+          const f = d.formats?.[0];
+          return (
+            <button key={d.id} type="button" onClick={() => addDish(d, 1, f?.name ?? null)} className="shrink-0 rounded-full bg-secondary px-3 py-2 text-xs font-bold text-secondary-foreground">
+              + {d.name}{f ? ` ${f.name}` : ""} · {formatPrice(f?.price ?? d.price)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish[]; onClose: () => void }) {
+  const addDish = useAddDish();
+  const [qty, setQty] = useState(1);
+  const [fmt, setFmt] = useState<string | null>(null);
+  if (!dish) return null;
+  const current = fmt ?? dish.formats?.[0]?.name ?? null;
+  const price = dish.formats?.find((f) => f.name === current)?.price ?? dish.price;
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); } }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-lg">
+        <Img dish={dish} className="aspect-[4/3] w-full" />
+        <div className="space-y-4 p-5">
+          <div>
+            <span className="text-xs font-bold uppercase text-muted-foreground">{categoryLabel(dish.category)}</span>
+            <DialogTitle className="font-display text-2xl">{dish.name}</DialogTitle>
+            <p className="mt-1 text-lg font-bold text-primary">{formatPrice(price)}</p>
+          </div>
+          {dish.ingredients && (
+            <div><p className="text-sm font-bold">Composition</p><p className="text-sm text-muted-foreground">{dish.ingredients}</p></div>
+          )}
+          {dish.is_available ? (
+            <>
+              <FormatPicker dish={dish} value={current} onChange={setFmt} />
+              <div className="flex items-center justify-between gap-2">
+                <Qty qty={qty} setQty={setQty} />
+                <button onClick={() => { addDish(dish, qty, current); setQty(1); }} className="rounded-full bg-primary px-5 py-3 font-bold text-primary-foreground">
+                  Ajouter · {formatPrice(price * qty)}
+                </button>
+              </div>
+              {dish.category !== "boisson" && <DrinkSuggest drinks={drinks} />}
+            </>
+          ) : <p className="rounded-xl bg-secondary p-3 text-center font-bold">Épuisé</p>}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -68,14 +179,16 @@ function MenuPage() {
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState(false);
   const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState<Dish | null>(null);
   const { data: dishes, isLoading } = useQuery({
     queryKey: ["dishes", "published"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("dishes").select("id,name,price,image_url,category").eq("published", true).order("created_at");
+      const { data, error } = await supabase.from("dishes").select(DISH_COLUMNS).eq("published", true).order("created_at");
       if (error) throw error;
-      return data as Dish[];
+      return data as unknown as Dish[];
     },
   });
+  const drinks = dishes?.filter((d) => d.category === "boisson") ?? [];
 
   const cartButton = (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -91,18 +204,19 @@ function MenuPage() {
         <div className="flex-1 space-y-3 overflow-y-auto px-4">
           {cart.items.length === 0 && <p className="text-muted-foreground">Ton panier est vide.</p>}
           {cart.items.map((i) => (
-            <div key={i.dish_id} className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
+            <div key={i.key} className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{i.name}</p>
                 <p className="text-sm text-muted-foreground">{formatPrice(i.price * i.quantity)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <button onClick={() => cart.setQty(i.dish_id, i.quantity - 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Moins"><Minus className="h-4 w-4" /></button>
+                <button onClick={() => cart.setQty(i.key, i.quantity - 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Moins"><Minus className="h-4 w-4" /></button>
                 <span className="w-6 text-center font-bold">{i.quantity}</span>
-                <button onClick={() => cart.setQty(i.dish_id, i.quantity + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Plus"><Plus className="h-4 w-4" /></button>
+                <button onClick={() => cart.setQty(i.key, i.quantity + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Plus"><Plus className="h-4 w-4" /></button>
               </div>
             </div>
           ))}
+          {cart.items.length > 0 && <DrinkSuggest drinks={drinks} />}
           {cart.items.length > 0 && (
             <div className="pt-2">
               <label className="mb-2 block font-semibold">Personnaliser ma commande</label>
@@ -125,27 +239,27 @@ function MenuPage() {
       <SiteHeader right={cartButton} />
       <main className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-3xl font-black">Le menu</h1>
-        <p className="mt-1 text-muted-foreground">Touche un article pour l'ajouter au panier.</p>
+        <p className="mt-1 text-muted-foreground">Touche un article pour voir sa fiche.</p>
         {isLoading && <p className="mt-8 text-muted-foreground">Chargement…</p>}
-        {dishes && dishes.length === 0 && <p className="mt-8 text-muted-foreground">Aucun plat disponible pour le moment.</p>}
-        <nav className="sticky top-[72px] z-10 mt-5 flex gap-2 bg-background/90 py-2 backdrop-blur">
-          {[["plats", "Plats"], ["desserts", "Desserts"]].map(([id, label]) => (
-            <a key={id} href={`#${id}`} className="rounded-full bg-secondary px-5 py-2 font-bold text-secondary-foreground hover:bg-primary hover:text-primary-foreground">{label}</a>
+        <nav className="sticky top-[72px] z-10 mt-5 flex gap-2 overflow-x-auto bg-background/90 py-2 backdrop-blur">
+          {CATEGORIES.map((c) => (
+            <a key={c.id} href={`#${c.id}`} className="shrink-0 rounded-full bg-secondary px-5 py-2 font-bold text-secondary-foreground hover:bg-primary hover:text-primary-foreground">{c.label}</a>
           ))}
         </nav>
-        {[["plats", "Plats", "plat"], ["desserts", "Desserts", "dessert"]].map(([id, label, cat]) => {
-          const list = dishes?.filter((d) => d.category === cat) ?? [];
+        {CATEGORIES.map((c) => {
+          const list = dishes?.filter((d) => d.category === c.cat) ?? [];
           return (
-            <section key={id} id={id} className="scroll-mt-32 pt-6">
-              <h2 className="text-2xl font-black">{label}</h2>
+            <section key={c.id} id={c.id} className="scroll-mt-32 pt-6">
+              <h2 className="text-2xl font-black">{c.label}</h2>
               {dishes && list.length === 0 && <p className="mt-3 text-muted-foreground">Rien pour le moment.</p>}
               <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {list.map((d) => <DishCard key={d.id} dish={d} />)}
+                {list.map((d) => <DishCard key={d.id} dish={d} onOpen={() => setDetail(d)} />)}
               </div>
             </section>
           );
         })}
       </main>
+      <DishDetail dish={detail} drinks={drinks} onClose={() => setDetail(null)} />
       {cart.count > 0 && !open && (
         <button onClick={() => setOpen(true)} className="fixed inset-x-4 bottom-4 z-20 mx-auto flex h-14 max-w-md items-center justify-between rounded-full bg-primary px-6 font-bold text-primary-foreground shadow-bubble">
           <span>Voir le panier ({cart.count})</span><span>{formatPrice(cart.total)}</span>

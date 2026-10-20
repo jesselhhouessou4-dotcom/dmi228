@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const TEAM_CHAT_ID = -1004496815218;
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
 
 function esc(s: string) {
@@ -28,19 +29,8 @@ export const notifyNewOrder = createServerFn({ method: "POST" })
       .eq("telegram_notified", false).gte("created_at", since).maybeSingle();
     if (!order) return { ok: false, error: "not_found" };
 
-    // Resolve the owner's chat id (saved once, discovered from the bot's messages).
-    let chatId: number | null = null;
-    const { data: s } = await supabaseAdmin.from("telegram_settings").select("chat_id").eq("id", 1).maybeSingle();
-    if (s) chatId = Number(s.chat_id);
-    if (!chatId) {
-      const r = await fetch(`${GATEWAY_URL}/getUpdates`, { method: "POST", headers, body: "{}" });
-      if (!r.ok) { console.error("getUpdates", r.status, await r.text()); return { ok: false, error: "telegram" }; }
-      const j = await r.json() as { result?: Array<{ message?: { chat?: { id: number; type: string } } }> };
-      const found = [...(j.result ?? [])].reverse().find((u) => u.message?.chat?.type === "private");
-      if (!found?.message?.chat) return { ok: false, error: "no_chat" };
-      chatId = found.message.chat.id;
-      await supabaseAdmin.from("telegram_settings").upsert({ id: 1, chat_id: chatId });
-    }
+    // Order alerts go only to the team group chat.
+    const chatId = TEAM_CHAT_ID;
 
     const items = (order.items as Array<{ name: string; quantity: number; price: number }>) ?? [];
     const lines = items.map((i) => `• ${i.quantity} × ${esc(i.name)}`).join("\n");
@@ -48,7 +38,7 @@ export const notifyNewOrder = createServerFn({ method: "POST" })
       "🛎️ <b>Nouvelle commande !</b>",
       `👤 ${esc(order.customer_name)}`,
       order.customer_phone ? `📞 ${esc(order.customer_phone)}` : "",
-      `📍 ${esc(order.delivery_location)}`,
+      `📍 ${esc(order.delivery_location)}`.replace(/(https:\/\/www\.google\.com\/maps\?q=[0-9.,-]+)/, '<a href="$1">📌 Ouvrir la carte</a>'),
       `🕐 ${esc(order.delivery_time)}`,
       `💳 ${order.payment_method === "cash" ? "Espèces à la livraison" : "Mobile money"}`,
       "",
