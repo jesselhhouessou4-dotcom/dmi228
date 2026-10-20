@@ -18,9 +18,13 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          featured: boolean
+          formats: Json
           id: string
           image_url: string | null
+          in_carousel: boolean
           ingredients: string | null
+          is_available: boolean
           name: string
           price: number
           published: boolean
@@ -28,9 +32,13 @@ export type Database = {
         Insert: {
           category?: string
           created_at?: string
+          featured?: boolean
+          formats?: Json
           id?: string
           image_url?: string | null
+          in_carousel?: boolean
           ingredients?: string | null
+          is_available?: boolean
           name: string
           price: number
           published?: boolean
@@ -38,9 +46,13 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          featured?: boolean
+          formats?: Json
           id?: string
           image_url?: string | null
+          in_carousel?: boolean
           ingredients?: string | null
+          is_available?: boolean
           name?: string
           price?: number
           published?: boolean
@@ -55,6 +67,7 @@ export type Database = {
           customer_phone: string | null
           delivery_location: string
           delivery_time: string
+          delivery_type: string | null
           id: string
           items: Json
           note: string | null
@@ -70,6 +83,7 @@ export type Database = {
           customer_phone?: string | null
           delivery_location: string
           delivery_time: string
+          delivery_type?: string | null
           id?: string
           items: Json
           note?: string | null
@@ -85,6 +99,7 @@ export type Database = {
           customer_phone?: string | null
           delivery_location?: string
           delivery_time?: string
+          delivery_type?: string | null
           id?: string
           items?: Json
           note?: string | null
@@ -136,6 +151,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add: { Args: { _email: string }; Returns: undefined }
+      admin_list: {
+        Args: never
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
+      admin_remove: { Args: { _user_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -161,6 +185,20 @@ export type Database = {
           _customer_phone: string
           _delivery_location: string
           _delivery_time: string
+          _items: Json
+          _note: string
+          _payment_method: string
+        }
+        Returns: string
+      }
+      place_order_v3: {
+        Args: {
+          _customer_email: string
+          _customer_name: string
+          _customer_phone: string
+          _delivery_location: string
+          _delivery_time: string
+          _delivery_type: string
           _items: Json
           _note: string
           _payment_method: string
