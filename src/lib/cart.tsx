@@ -1,16 +1,20 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type CartItem = { dish_id: string; name: string; price: number; image_url: string | null; quantity: number };
+export type CartItem = {
+  key: string; dish_id: string; name: string; price: number; image_url: string | null;
+  quantity: number; format?: string | null; category?: string;
+};
 
 type Cart = {
   items: CartItem[];
   note: string;
   setNote: (n: string) => void;
-  add: (item: Omit<CartItem, "quantity">, qty?: number) => void;
-  setQty: (id: string, qty: number) => void;
+  add: (item: Omit<CartItem, "quantity" | "key">, qty?: number) => void;
+  setQty: (key: string, qty: number) => void;
   clear: () => void;
   total: number;
   count: number;
+  hasDrink: boolean;
 };
 
 const CartContext = createContext<Cart | null>(null);
@@ -18,6 +22,8 @@ const CartContext = createContext<Cart | null>(null);
 export function formatPrice(n: number) {
   return `${n.toLocaleString("fr-FR")} FCFA`;
 }
+
+export const itemKey = (dish_id: string, format?: string | null) => `${dish_id}::${format ?? ""}`;
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -29,7 +35,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem("dmi-cart");
       if (raw) {
         const p = JSON.parse(raw);
-        setItems(p.items ?? []);
+        setItems((p.items ?? []).map((i: CartItem) => ({ ...i, key: i.key ?? itemKey(i.dish_id, i.format) })));
         setNote(p.note ?? "");
       }
     } catch {}
@@ -42,20 +48,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const add: Cart["add"] = (item, qty = 1) =>
     setItems((prev) => {
-      const ex = prev.find((i) => i.dish_id === item.dish_id);
-      if (ex) return prev.map((i) => (i.dish_id === item.dish_id ? { ...i, quantity: Math.min(99, i.quantity + qty) } : i));
-      return [...prev, { ...item, quantity: qty }];
+      const key = itemKey(item.dish_id, item.format);
+      const ex = prev.find((i) => i.key === key);
+      if (ex) return prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(99, i.quantity + qty) } : i));
+      return [...prev, { ...item, key, quantity: qty }];
     });
-  const setQty = (id: string, qty: number) =>
-    setItems((prev) => (qty <= 0 ? prev.filter((i) => i.dish_id !== id) : prev.map((i) => (i.dish_id === id ? { ...i, quantity: Math.min(99, qty) } : i))));
-  const clear = () => {
-    setItems([]);
-    setNote("");
-  };
+  const setQty = (key: string, qty: number) =>
+    setItems((prev) => (qty <= 0 ? prev.filter((i) => i.key !== key) : prev.map((i) => (i.key === key ? { ...i, quantity: Math.min(99, qty) } : i))));
+  const clear = () => { setItems([]); setNote(""); };
   const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const count = items.reduce((s, i) => s + i.quantity, 0);
+  const hasDrink = items.some((i) => i.category === "boisson");
 
-  return <CartContext.Provider value={{ items, note, setNote, add, setQty, clear, total, count }}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ items, note, setNote, add, setQty, clear, total, count, hasDrink }}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

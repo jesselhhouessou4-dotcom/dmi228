@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { UtensilsCrossed } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/cart";
-import logo from "@/assets/dmi-logo.png.asset.json";
+import logo from "@/assets/dmi-new-logo.png.asset.json";
 import hero from "@/assets/hero-food.jpg";
 
 export const Route = createFileRoute("/")({
