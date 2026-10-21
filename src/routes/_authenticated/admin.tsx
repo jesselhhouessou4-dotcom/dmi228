@@ -287,7 +287,7 @@ function Dishes() {
   };
 
   const toggle = async (d: Dish, field: "published" | "is_available" | "featured" | "in_carousel", v: boolean) => {
-    const { error } = await supabase.from("dishes").update({ [field]: v }).eq("id", d.id);
+    const { error } = await supabase.from("dishes").update({ [field]: v } as { published: boolean }).eq("id", d.id);
     if (error) toast.error(error.message);
     refresh();
   };
