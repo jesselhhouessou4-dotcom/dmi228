@@ -36,10 +36,12 @@ export const notifyNewOrder = createServerFn({ method: "POST" })
     const lines = items.map((i) => `• ${i.quantity} × ${esc(i.name)}`).join("\n");
     const text = [
       "🛎️ <b>Nouvelle commande !</b>",
+      order.order_type === "preorder" && order.scheduled_at
+        ? `⏰ <b>PRÉ-COMMANDE</b> — ${new Date(order.scheduled_at).toLocaleString("fr-FR", { timeZone: "Africa/Lome", dateStyle: "short", timeStyle: "short" })}`
+        : "⚡ <b>IMMÉDIATE</b>",
       `👤 ${esc(order.customer_name)}`,
       order.customer_phone ? `📞 ${esc(order.customer_phone)}` : "",
       `📍 ${esc(order.delivery_location)}`.replace(/(https:\/\/www\.google\.com\/maps\?q=[0-9.,-]+)/, '<a href="$1">📌 Ouvrir la carte</a>'),
-      `🕐 ${esc(order.delivery_time)}`,
       `💳 ${order.payment_method === "cash" ? "Espèces à la livraison" : "Mobile money"}`,
       "",
       lines,

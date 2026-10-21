@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Copy, GraduationCap, MapPin, Navigation } from "lucide-react";
+import { CalendarClock, Zap, Copy, GraduationCap, MapPin, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart, formatPrice } from "@/lib/cart";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -31,7 +32,6 @@ const schema = z.object({
   name: z.string().trim().min(1, "Indique ton nom").max(100),
   phone: z.string().trim().regex(/^\+?[0-9 ]{8,20}$/, "Indique un numéro de téléphone valide"),
   email: z.union([z.literal(""), z.string().trim().email("Adresse e-mail invalide").max(255)]),
-  time: z.string().trim().min(1, "Indique l'heure souhaitée").max(50),
 });
 
 async function copy(text: string, label: string) {
@@ -42,7 +42,13 @@ function CheckoutPage() {
   const cart = useCart();
   const navigate = useNavigate();
   const notify = useServerFn(notifyNewOrder);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", time: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "" })
+  const [otype, setOtype] = useState<"immediate" | "preorder" | null>(null);
+  const [when, setWhen] = useState("");
+  const { data: settings } = useQuery({ queryKey: ["shop-settings"], queryFn: async () => (await supabase.from("shop_settings").select("*").eq("id", 1).maybeSingle()).data });
+  const immediateOpen = settings?.immediate_open ?? true;
+  const lead = settings?.lead_minutes ?? 60;
+  const minWhen = toLocalInput(new Date(Date.now() + lead * 60000));;
   const [dtype, setDtype] = useState<"etudiant" | "externe" | null>(null);
   const [place, setPlace] = useState("");
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
@@ -78,6 +84,14 @@ function CheckoutPage() {
     e.preventDefault();
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide"); return; }
+    if (!otype) { toast.error("Choisis maintenant ou pré-commande"); return; }
+    if (otype === "immediate" && !immediateOpen) { toast.error("Commandes immédiates fermées, choisis la pré-commande"); return; }
+    if (otype === "preorder") {
+      if (!when) { toast.error("Choisis la date et l'heure de livraison"); return; }
+      if (new Date(when).getTime() < Date.now() + lead * 60000) { toast.error(`Choisis un horaire au moins ${lead} min à l'avance`); return; }
+      const hm = when.slice(11, 16);
+      if (settings && (hm < settings.open_time.slice(0, 5) || hm > settings.close_time.slice(0, 5))) { toast.error(`Livraison entre ${settings.open_time.slice(0, 5)} et ${settings.close_time.slice(0, 5)}`); return; }
+    }
     if (!dtype) { toast.error("Indique si tu es étudiant(e) ou externe"); return; }
     const p = place.trim();
     if (dtype === "etudiant" && p.length < 3) { toast.error("Indique le lieu précis sur le campus"); return; }
@@ -87,11 +101,12 @@ function CheckoutPage() {
       ? `Étudiant(e) — ${p}`
       : `Externe — ${[p, mapLink].filter(Boolean).join(" — ")}`;
     setLoading(true);
-    const { data: orderId, error } = await supabase.rpc("place_order_v3", {
+    const { data: orderId, error } = await supabase.rpc("place_order_v4", {
+      _order_type: otype,
+      _scheduled_at: otype === "preorder" ? new Date(when).toISOString() : (null as unknown as string),
       _customer_name: parsed.data.name,
       _customer_phone: parsed.data.phone,
       _customer_email: parsed.data.email,
-      _delivery_time: parsed.data.time,
       _delivery_type: dtype,
       _delivery_location: location.slice(0, 600),
       _payment_method: payment,
@@ -119,7 +134,21 @@ function CheckoutPage() {
           <Field label="Ton nom"><Input value={form.name} maxLength={100} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Ton numéro de téléphone"><Input type="tel" value={form.phone} maxLength={20} placeholder="90 00 00 00" onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Ton e-mail (facultatif)"><Input type="email" value={form.email} maxLength={255} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-xl" /></Field>
-          <Field label="Heure de réception souhaitée"><Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="h-12 rounded-xl" /></Field>
+        </div>
+
+        <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
+          <p className="font-bold">Tu veux être livré : maintenant ou plus tard (pré-commande) ?</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" disabled={!immediateOpen} className={`${choice(otype === "immediate")} disabled:opacity-50`} onClick={() => setOtype("immediate")}><Zap className="mb-1 h-5 w-5" />Maintenant</button>
+            <button type="button" className={choice(otype === "preorder")} onClick={() => setOtype("preorder")}><CalendarClock className="mb-1 h-5 w-5" />Pré-commande</button>
+          </div>
+          {!immediateOpen && <p className="rounded-xl bg-secondary p-3 text-sm font-semibold">Les commandes immédiates sont fermées pour le moment. Tu peux pré-commander.</p>}
+          {otype === "immediate" && <p className="rounded-xl bg-secondary p-3 text-sm font-semibold">Ta commande sera préparée dès maintenant.</p>}
+          {otype === "preorder" && (
+            <Field label={`Date et heure de livraison${settings ? ` (entre ${settings.open_time.slice(0, 5)} et ${settings.close_time.slice(0, 5)})` : ""}`}>
+              <Input type="datetime-local" min={minWhen} value={when} onChange={(e) => setWhen(e.target.value)} className="h-12 rounded-xl" />
+            </Field>
+          )}
         </div>
 
         <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
@@ -200,4 +229,9 @@ function CopyRow({ label, value, raw }: { label: string; value: string; raw: str
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="mb-1 block text-sm font-semibold">{label}</span>{children}</label>;
+}
+
+function toLocalInput(d: Date) {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }

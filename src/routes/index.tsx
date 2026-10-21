@@ -58,7 +58,7 @@ function Carousel({ dishes }: { dishes: Dish[] }) {
   const [paused, setPaused] = useState(false);
   useEffect(() => {
     if (paused || slides.length < 2) return;
-    const t = setInterval(() => setI((x) => (x + 1) % slides.length), 4000);
+    const t = setInterval(() => setI((x) => (x + 1) % slides.length), 2000);
     return () => clearInterval(t);
   }, [paused, slides.length]);
   if (slides.length === 0)
@@ -67,7 +67,7 @@ function Carousel({ dishes }: { dishes: Dish[] }) {
     <div className="relative" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onTouchStart={() => setPaused(true)} onTouchEnd={() => setTimeout(() => setPaused(false), 3000)}>
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2.5rem] shadow-bubble">
         {slides.map((d, k) => (
-          <div key={d.id} className={`absolute inset-0 transition-opacity duration-1000 ${k === i % slides.length ? "opacity-100" : "opacity-0"}`}>
+          <div key={d.id} className={`absolute inset-0 transition-opacity duration-500 ${k === i % slides.length ? "opacity-100" : "opacity-0"}`}>
             <img src={d.image_url!} alt={d.name} className="h-full w-full object-cover" />
             <span className="absolute bottom-4 left-4 rounded-full bg-background/90 px-4 py-1 text-sm font-bold text-foreground">{d.name}</span>
           </div>
