@@ -71,7 +71,9 @@ export type Database = {
           id: string
           items: Json
           note: string | null
+          order_type: string
           payment_method: string
+          scheduled_at: string | null
           status: string
           telegram_notified: boolean
           total: number
@@ -87,7 +89,9 @@ export type Database = {
           id?: string
           items: Json
           note?: string | null
+          order_type?: string
           payment_method: string
+          scheduled_at?: string | null
           status?: string
           telegram_notified?: boolean
           total: number
@@ -103,10 +107,39 @@ export type Database = {
           id?: string
           items?: Json
           note?: string | null
+          order_type?: string
           payment_method?: string
+          scheduled_at?: string | null
           status?: string
           telegram_notified?: boolean
           total?: number
+        }
+        Relationships: []
+      }
+      shop_settings: {
+        Row: {
+          close_time: string
+          id: number
+          immediate_open: boolean
+          lead_minutes: number
+          open_time: string
+          updated_at: string
+        }
+        Insert: {
+          close_time?: string
+          id?: number
+          immediate_open?: boolean
+          lead_minutes?: number
+          open_time?: string
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string
+          id?: number
+          immediate_open?: boolean
+          lead_minutes?: number
+          open_time?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -202,6 +235,21 @@ export type Database = {
           _items: Json
           _note: string
           _payment_method: string
+        }
+        Returns: string
+      }
+      place_order_v4: {
+        Args: {
+          _customer_email: string
+          _customer_name: string
+          _customer_phone: string
+          _delivery_location: string
+          _delivery_type: string
+          _items: Json
+          _note: string
+          _order_type: string
+          _payment_method: string
+          _scheduled_at: string
         }
         Returns: string
       }
