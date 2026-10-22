@@ -102,7 +102,7 @@ function Suivi() {
                 {TRACK_STEPS.map((s, i) => (
                   <li key={s.v} className="text-center">
                     <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full font-black ${i <= idx ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
-                      {i < idx ? <Check className="h-5 w-5" /> : i + 1}
+                      {i < idx || order.status === "livrée" ? <Check className="h-5 w-5" /> : i + 1}
                     </div>
                     <div className={`mt-2 h-1 rounded-full ${i <= idx ? "bg-primary" : "bg-secondary"}`} />
                     <p className={`mt-2 text-xs font-bold ${i <= idx ? "" : "text-muted-foreground"}`}>{s.l}</p>
