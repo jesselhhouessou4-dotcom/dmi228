@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import qr from "@/assets/mixx-qr.jpg.asset.json";
 import { useServerFn } from "@tanstack/react-start";
 import { notifyNewOrder } from "@/lib/telegram.functions";
+import { saveOrderNumber } from "@/lib/orders";
 
 export const Route = createFileRoute("/commande")({
   head: () => ({
@@ -113,13 +114,16 @@ function CheckoutPage() {
       _note: cart.note,
       _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity, format: i.format ?? null })),
     });
+    let num: string | undefined;
     if (!error && orderId) {
       try { await notify({ data: { orderId: orderId as string } }); } catch (e) { console.error(e); }
+      const { data: n } = await supabase.rpc("order_number_of", { _id: orderId as string });
+      if (n) { num = n as string; saveOrderNumber(num); }
     }
     setLoading(false);
     if (error) { toast.error(error.message || "Impossible d'envoyer la commande"); return; }
     cart.clear();
-    navigate({ to: "/confirmation", search: { p: payment } });
+    navigate({ to: "/confirmation", search: { p: payment, n: num } });
   };
 
   const choice = (active: boolean) =>
