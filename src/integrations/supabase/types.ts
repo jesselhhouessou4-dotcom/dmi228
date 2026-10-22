@@ -61,6 +61,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          cancel_notified: boolean
+          cancel_reason: string | null
+          cancelled_by: string | null
           created_at: string
           customer_email: string | null
           customer_name: string
@@ -71,6 +74,7 @@ export type Database = {
           id: string
           items: Json
           note: string | null
+          order_number: string | null
           order_type: string
           payment_method: string
           scheduled_at: string | null
@@ -79,6 +83,9 @@ export type Database = {
           total: number
         }
         Insert: {
+          cancel_notified?: boolean
+          cancel_reason?: string | null
+          cancelled_by?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
@@ -89,6 +96,7 @@ export type Database = {
           id?: string
           items: Json
           note?: string | null
+          order_number?: string | null
           order_type?: string
           payment_method: string
           scheduled_at?: string | null
@@ -97,6 +105,9 @@ export type Database = {
           total: number
         }
         Update: {
+          cancel_notified?: boolean
+          cancel_reason?: string | null
+          cancelled_by?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
@@ -107,6 +118,7 @@ export type Database = {
           id?: string
           items?: Json
           note?: string | null
+          order_number?: string | null
           order_type?: string
           payment_method?: string
           scheduled_at?: string | null
@@ -193,6 +205,10 @@ export type Database = {
         }[]
       }
       admin_remove: { Args: { _user_id: string }; Returns: undefined }
+      cancel_order_client: {
+        Args: { _number: string; _reason: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -200,6 +216,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      order_number_of: { Args: { _id: string }; Returns: string }
       place_order: {
         Args: {
           _customer_name: string
@@ -252,6 +269,22 @@ export type Database = {
           _scheduled_at: string
         }
         Returns: string
+      }
+      track_order: {
+        Args: { _number: string }
+        Returns: {
+          cancel_reason: string
+          cancelled_by: string
+          created_at: string
+          delivery_location: string
+          items: Json
+          order_number: string
+          order_type: string
+          payment_method: string
+          scheduled_at: string
+          status: string
+          total: number
+        }[]
       }
     }
     Enums: {
