@@ -37,11 +37,13 @@ type Order = {
   id: string; customer_name: string; delivery_time: string; delivery_location: string; payment_method: string;
   customer_phone: string | null; customer_email: string | null; order_type: string; scheduled_at: string | null;
   note: string | null; items: OrderItem[]; total: number; status: string; created_at: string;
+  order_number: string | null; cancel_reason: string | null; cancelled_by: string | null;
 };
 
 const STATUSES = [
   { v: "nouvelle", l: "Nouvelle" },
   { v: "en_preparation", l: "En préparation" },
+  { v: "en_livraison", l: "En livraison" },
   { v: "livrée", l: "Livrée" },
   { v: "annulée", l: "Annulée" },
 ];
@@ -148,9 +150,17 @@ function Orders() {
     return l;
   }, [orders, fStatus, fType, fDate]);
 
+  const cancelFn = useServerFn(notifyCancel);
   const setStatus = async (o: Order, status: string) => {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", o.id);
+    let patch: { status: string; cancel_reason?: string | null; cancelled_by?: string } = { status };
+    if (status === "annulée") {
+      const r = window.prompt("Motif d'annulation (visible par le client) :", "");
+      if (r === null) return;
+      patch = { status, cancel_reason: r.trim().slice(0, 300) || null, cancelled_by: "admin" };
+    }
+    const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
     if (error) toast.error(error.message);
+    else if (status === "annulée" && o.order_number) { try { await cancelFn({ data: { orderNumber: o.order_number } }); } catch { /* ignore */ } }
     qc.invalidateQueries({ queryKey: ["orders"] });
   };
 
@@ -183,8 +193,9 @@ function Orders() {
                   <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-black ${o.order_type === "preorder" ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground"}`}>
                     {o.order_type === "preorder" ? `PRÉ-COMMANDE${o.scheduled_at ? ` · ${fmtDate(o.scheduled_at)}` : ""}` : "IMMÉDIATE"}
                   </span>
-                  <p className="mt-1 truncate text-lg font-bold">{o.customer_name}</p>
+                  <p className="mt-1 truncate text-lg font-bold">{o.order_number ? `${o.order_number} · ` : ""}{o.customer_name}</p>
                   <p className="text-xs text-muted-foreground">Reçue le {fmtDate(o.created_at)}</p>
+                  {o.status === "annulée" && <p className="text-xs font-bold text-destructive">Annulée par {o.cancelled_by === "client" ? "le client" : "l'équipe"}{o.cancel_reason ? ` — ${o.cancel_reason}` : ""}</p>}
                 </div>
                 <select aria-label="Statut" value={o.status} onChange={(e) => setStatus(o, e.target.value)} className="h-9 shrink-0 rounded-full border bg-secondary px-2 text-xs font-bold">
                   {STATUSES.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}

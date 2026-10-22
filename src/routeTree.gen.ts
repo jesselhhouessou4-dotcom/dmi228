@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommandeRouteImport } from './routes/commande'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as MenuRouteImport } from './routes/menu'
+import { Route as SuiviRouteImport } from './routes/suivi'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
 const IndexRoute = IndexRouteImport.update({
@@ -46,6 +47,11 @@ const MenuRoute = MenuRouteImport.update({
   path: '/menu',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuiviRoute = SuiviRouteImport.update({
+  id: '/suivi',
+  path: '/suivi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/commande': typeof CommandeRoute
   '/confirmation': typeof ConfirmationRoute
   '/menu': typeof MenuRoute
+  '/suivi': typeof SuiviRoute
   '/admin': typeof AuthenticatedAdminRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/commande': typeof CommandeRoute
   '/confirmation': typeof ConfirmationRoute
   '/menu': typeof MenuRoute
+  '/suivi': typeof SuiviRoute
   '/admin': typeof AuthenticatedAdminRoute
 }
 export interface FileRoutesById {
@@ -76,13 +84,28 @@ export interface FileRoutesById {
   '/commande': typeof CommandeRoute
   '/confirmation': typeof ConfirmationRoute
   '/menu': typeof MenuRoute
+  '/suivi': typeof SuiviRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/commande' | '/confirmation' | '/menu' | '/admin'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/commande'
+    | '/confirmation'
+    | '/menu'
+    | '/suivi'
+    | '/admin'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/commande' | '/confirmation' | '/menu' | '/admin'
+  to:
+    | '/'
+    | '/auth'
+    | '/commande'
+    | '/confirmation'
+    | '/menu'
+    | '/suivi'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
     | '/commande'
     | '/confirmation'
     | '/menu'
+    | '/suivi'
     | '/_authenticated/admin'
   fileRoutesById: FileRoutesById
 }
@@ -101,6 +125,7 @@ export interface RootRouteChildren {
   CommandeRoute: typeof CommandeRoute
   ConfirmationRoute: typeof ConfirmationRoute
   MenuRoute: typeof MenuRoute
+  SuiviRoute: typeof SuiviRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -147,6 +172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MenuRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/suivi': {
+      id: '/suivi'
+      path: '/suivi'
+      fullPath: '/suivi'
+      preLoaderRoute: typeof SuiviRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -175,6 +207,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommandeRoute: CommandeRoute,
   ConfirmationRoute: ConfirmationRoute,
   MenuRoute: MenuRoute,
+  SuiviRoute: SuiviRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
