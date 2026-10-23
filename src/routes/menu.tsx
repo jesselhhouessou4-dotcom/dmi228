@@ -241,7 +241,7 @@ function MenuPage() {
         <h1 className="text-3xl font-black">Le menu</h1>
         <p className="mt-1 text-muted-foreground">Touche un article pour voir sa fiche.</p>
         {isLoading && <p className="mt-8 text-muted-foreground">Chargement…</p>}
-        <nav className="sticky top-[72px] z-10 mt-5 flex gap-2 overflow-x-auto bg-background/90 py-2 backdrop-blur">
+        <nav className="sticky top-16 z-10 mt-5 flex gap-2 overflow-x-auto bg-background py-2 shadow-[0_8px_12px_-10px_rgba(0,0,0,0.25)]">
           {CATEGORIES.map((c) => (
             <a key={c.id} href={`#${c.id}`} className="shrink-0 rounded-full bg-secondary px-5 py-2 font-bold text-secondary-foreground hover:bg-primary hover:text-primary-foreground">{c.label}</a>
           ))}
