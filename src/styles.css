@@ -66,6 +66,53 @@
   --input: oklch(0.9 0.015 150);
   --ring: oklch(0.45 0.12 153);
   --shadow-bubble: 0 10px 30px -12px oklch(0.34 0.09 153 / 0.35);
+  --shadow-home-raised: 0 16px 32px -10px oklch(0.25 0.05 153 / 0.42);
+}
+
+.home-intro { min-height: min(760px, 88svh); }
+.home-reveal { opacity: 1; transform: translate3d(0, 0, 0) scale(1); transition: opacity 560ms ease, transform 560ms cubic-bezier(.2,.7,.25,1); }
+.home-reveal[data-visible="false"] { opacity: 0; transform: translate3d(0, 24px, 0) scale(.97); }
+.home-reveal[data-visible="false"][data-direction="left"] { transform: translate3d(-30px, 0, 0) scale(.97); }
+.home-reveal[data-visible="false"][data-direction="right"] { transform: translate3d(30px, 0, 0) scale(.97); }
+.home-logo { animation: home-logo-drop 700ms cubic-bezier(.2,.7,.3,1) both; }
+.home-exclamation { transform-origin: bottom center; animation: home-pop 420ms 240ms both; }
+.home-concept span { display: block; animation: home-line-in 480ms both; }
+.home-concept span:nth-child(1) { animation-delay: 260ms; }
+.home-concept span:nth-child(2) { animation-delay: 360ms; }
+.home-concept span:nth-child(3) { animation-delay: 460ms; }
+.home-cta-entry { animation: home-fade-in 420ms 740ms both; }
+.home-cta-pulse { animation: home-pulse 900ms 1160ms ease-in-out infinite alternate; }
+.home-action, .home-dish, .home-control, .home-dot-button { transition: transform 240ms ease, box-shadow 240ms ease, background-color 200ms ease; -webkit-tap-highlight-color: transparent; }
+.home-action:active, .home-dish:active, .home-control:active, .home-dot-button:active { transform: scale(.96); }
+.home-action:focus-visible, .home-dish:focus-visible { outline: 2px solid var(--brand-foreground); outline-offset: 5px; }
+.home-parallax { transform: translate3d(0, var(--parallax-y, 0px), 0); }
+.home-carousel-window { touch-action: pan-y pinch-zoom; }
+.home-carousel-slide { opacity: 0; transform: translate3d(7%,0,0) scale(1.045); transition: opacity 400ms ease, transform 400ms cubic-bezier(.2,.7,.25,1); pointer-events: none; }
+.home-carousel-slide[data-direction="previous"] { transform: translate3d(-7%,0,0) scale(1.045); }
+.home-carousel-slide[data-active="true"] { opacity: 1; transform: translate3d(0,0,0) scale(1); z-index: 1; }
+.home-control { flex-shrink: 0; color: var(--brand-foreground); }
+.home-control:hover, .home-dot-button:hover { background: color-mix(in oklab, var(--brand-foreground) 15%, transparent); }
+.home-dot-button { width: 20px; height: 36px; padding: 0; color: var(--brand-foreground); }
+.home-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand-foreground); opacity: .45; transition: transform 240ms ease, opacity 240ms ease; }
+.home-dot-active { opacity: 1; transform: scale(1.5); }
+@media (hover: hover) {
+  .home-action:hover, .home-dish:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-home-raised); }
+  .home-cta-pulse:has(.home-action:hover) { animation-play-state: paused; }
+}
+@keyframes home-logo-drop { 0% { opacity: 0; transform: translateY(-100px) scale(.96); } 65% { opacity: 1; transform: translateY(8px) scale(1.02); } 82% { transform: translateY(-4px) scale(1); } 100% { transform: translateY(0); } }
+@keyframes home-pop { 0% { opacity: 0; transform: scale(.3) rotate(-8deg); } 70% { opacity: 1; transform: scale(1.18) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes home-line-in { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes home-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes home-pulse { from { opacity: .88; } to { opacity: 1; } }
+@media (max-width: 767px) {
+  .home-intro { min-height: auto; }
+  .home-intro h1 { font-size: 42px; }
+  .home-dot-button { width: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-page *, .home-page *::before, .home-page *::after { animation: none !important; transition: none !important; }
+  .home-reveal, .home-reveal[data-visible="false"], .home-reveal[data-visible="false"][data-direction], .home-parallax, .home-action:hover, .home-action:active, .home-dish:hover, .home-dish:active { opacity: 1; transform: none; }
+  .home-carousel-slide, .home-carousel-slide[data-direction] { transform: none; }
 }
 
 @layer base {

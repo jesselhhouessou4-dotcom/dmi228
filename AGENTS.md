@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Homepage motion is isolated in HomeMotion/HomeCarousel and scoped CSS; keep timing/swipe rules in home-motion with tests to avoid changing other pages.
