@@ -47,7 +47,6 @@ function Index() {
             <span>ne te fatigue pas à chercher ni à te déplacer :</span>{" "}
             <span>on s'occupe de tout.</span>
           </p></HomeReveal>
-          <HomeReveal className="mt-8"><div className="home-cta-entry"><div className="home-cta-pulse"><Button asChild className="home-action h-14 rounded-full bg-brand-foreground px-10 text-lg font-bold text-brand shadow-bubble hover:bg-brand-foreground"><Link to="/menu">Commander</Link></Button></div></div></HomeReveal>
         </div>
         <HomeReveal direction="right" className="mt-10 w-full min-w-0 flex-1 md:mt-0"><HomeParallax><HomeCarousel dishes={data ?? []} /></HomeParallax></HomeReveal>
       </div>

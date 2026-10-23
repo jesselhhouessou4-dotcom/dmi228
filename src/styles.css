@@ -80,8 +80,6 @@
 .home-concept span:nth-child(1) { animation-delay: 260ms; }
 .home-concept span:nth-child(2) { animation-delay: 360ms; }
 .home-concept span:nth-child(3) { animation-delay: 460ms; }
-.home-cta-entry { animation: home-fade-in 420ms 740ms both; }
-.home-cta-pulse { animation: home-pulse 900ms 1160ms ease-in-out infinite alternate; }
 .home-action, .home-dish, .home-control, .home-dot-button { transition: transform 240ms ease, box-shadow 240ms ease, background-color 200ms ease; -webkit-tap-highlight-color: transparent; }
 .home-action:active, .home-dish:active, .home-control:active, .home-dot-button:active { transform: scale(.96); }
 .home-action:focus-visible, .home-dish:focus-visible { outline: 2px solid var(--brand-foreground); outline-offset: 5px; }
@@ -97,13 +95,10 @@
 .home-dot-active { opacity: 1; transform: scale(1.5); }
 @media (hover: hover) {
   .home-action:hover, .home-dish:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-home-raised); }
-  .home-cta-pulse:has(.home-action:hover) { animation-play-state: paused; }
 }
 @keyframes home-logo-drop { 0% { opacity: 0; transform: translateY(-100px) scale(.96); } 65% { opacity: 1; transform: translateY(8px) scale(1.02); } 82% { transform: translateY(-4px) scale(1); } 100% { transform: translateY(0); } }
 @keyframes home-pop { 0% { opacity: 0; transform: scale(.3) rotate(-8deg); } 70% { opacity: 1; transform: scale(1.18) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes home-line-in { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes home-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes home-pulse { from { opacity: .88; } to { opacity: 1; } }
 @media (max-width: 767px) {
   .home-intro { min-height: auto; }
   .home-intro h1 { font-size: 42px; }
