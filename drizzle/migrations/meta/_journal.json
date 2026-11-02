@@ -71,6 +71,13 @@
       "when": 1792642344303,
       "tag": "0009_order_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793582512922,
+      "tag": "0010_customer_space_notifications",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      customer_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          order_id: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          order_id?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dishes: {
         Row: {
           category: string
@@ -81,6 +119,7 @@ export type Database = {
           status: string
           telegram_notified: boolean
           total: number
+          user_id: string | null
         }
         Insert: {
           cancel_notified?: boolean
@@ -103,6 +142,7 @@ export type Database = {
           status?: string
           telegram_notified?: boolean
           total: number
+          user_id?: string | null
         }
         Update: {
           cancel_notified?: boolean
@@ -125,6 +165,28 @@ export type Database = {
           status?: string
           telegram_notified?: boolean
           total?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          usual_location: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string
+          usual_location?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          usual_location?: string
         }
         Relationships: []
       }
@@ -197,6 +259,21 @@ export type Database = {
     }
     Functions: {
       admin_add: { Args: { _email: string }; Returns: undefined }
+      admin_broadcast: {
+        Args: { _message: string; _title: string }
+        Returns: number
+      }
+      admin_customers: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          order_count: number
+          usual_location: string
+        }[]
+      }
       admin_list: {
         Args: never
         Returns: {
