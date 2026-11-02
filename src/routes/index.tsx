@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/cart";
 import { DISH_COLUMNS, categoryLabel, type Dish } from "@/lib/dishes";
 import logo from "@/assets/dmi-new-logo.png.asset.json";
+import { CustomerNav } from "@/components/CustomerNav";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,6 +39,7 @@ function Index() {
   const { data } = useDishes();
   return (
     <main className="home-page min-h-screen overflow-x-clip bg-brand text-brand-foreground">
+      <div className="mx-auto flex max-w-5xl justify-end px-6 pt-3"><CustomerNav /></div>
       <div className="home-intro mx-auto flex max-w-5xl flex-col items-center px-6 pb-10 pt-8 md:flex-row md:gap-12">
         <div className="flex min-w-0 flex-1 flex-col items-center text-center md:items-start md:text-left">
           <HomeReveal direction="up"><img src={logo.url} alt="Logo Don't Mind It" width={140} height={140} className="home-logo h-32 w-32 rounded-3xl object-contain shadow-bubble md:h-36 md:w-36" /></HomeReveal>

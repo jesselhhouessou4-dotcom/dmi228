@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2 } from "lucide-react";
 import { z } from "zod";
+import { useCustomer } from "@/lib/customer";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/confirmation")({
   validateSearch: z.object({ p: z.enum(["mobile_money", "cash"]).optional(), n: z.string().optional() }),
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/confirmation")({
 
 function Confirmation() {
   const { p, n } = Route.useSearch();
+  const { user } = useCustomer();
   return (
     <main className="flex min-h-screen items-center justify-center bg-brand px-6 text-center text-brand-foreground">
       <div>
@@ -31,6 +34,9 @@ function Confirmation() {
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           {n && <Link to="/suivi" search={{ n }} className="inline-flex h-12 items-center rounded-full bg-brand-foreground px-8 font-bold text-brand">Suivre ma commande</Link>}
           <Link to="/" className="inline-flex h-12 items-center rounded-full border border-brand-foreground px-8 font-bold">Retour à l'accueil</Link>
+        </div>
+        <div className="mt-8">
+          {user ? <Button asChild variant="secondary"><Link to="/mon-espace">Retrouver mes commandes</Link></Button> : <><p className="mx-auto max-w-md text-sm">Crée un compte pour retrouver tes prochaines commandes et recevoir des notifications.</p><Button asChild variant="secondary" className="mt-3"><Link to="/connexion">Créer mon compte</Link></Button></>}
         </div>
       </div>
     </main>
