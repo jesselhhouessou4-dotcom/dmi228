@@ -14,9 +14,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommandeRouteImport } from './routes/commande'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
+import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as SuiviRouteImport } from './routes/suivi'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedMonEspaceRouteImport } from './routes/_authenticated/mon-espace'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,6 +44,11 @@ const ConfirmationRoute = ConfirmationRouteImport.update({
   path: '/confirmation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MenuRoute = MenuRouteImport.update({
   id: '/menu',
   path: '/menu',
@@ -57,24 +64,33 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMonEspaceRoute = AuthenticatedMonEspaceRouteImport.update({
+  id: '/mon-espace',
+  path: '/mon-espace',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/commande': typeof CommandeRoute
   '/confirmation': typeof ConfirmationRoute
+  '/connexion': typeof ConnexionRoute
   '/menu': typeof MenuRoute
   '/suivi': typeof SuiviRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/mon-espace': typeof AuthenticatedMonEspaceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/commande': typeof CommandeRoute
   '/confirmation': typeof ConfirmationRoute
+  '/connexion': typeof ConnexionRoute
   '/menu': typeof MenuRoute
   '/suivi': typeof SuiviRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/mon-espace': typeof AuthenticatedMonEspaceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -83,9 +99,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/commande': typeof CommandeRoute
   '/confirmation': typeof ConfirmationRoute
+  '/connexion': typeof ConnexionRoute
   '/menu': typeof MenuRoute
   '/suivi': typeof SuiviRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/mon-espace': typeof AuthenticatedMonEspaceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -94,18 +112,22 @@ export interface FileRouteTypes {
     | '/auth'
     | '/commande'
     | '/confirmation'
+    | '/connexion'
     | '/menu'
     | '/suivi'
     | '/admin'
+    | '/mon-espace'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/commande'
     | '/confirmation'
+    | '/connexion'
     | '/menu'
     | '/suivi'
     | '/admin'
+    | '/mon-espace'
   id:
     | '__root__'
     | '/'
@@ -113,9 +135,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/commande'
     | '/confirmation'
+    | '/connexion'
     | '/menu'
     | '/suivi'
     | '/_authenticated/admin'
+    | '/_authenticated/mon-espace'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -124,6 +148,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CommandeRoute: typeof CommandeRoute
   ConfirmationRoute: typeof ConfirmationRoute
+  ConnexionRoute: typeof ConnexionRoute
   MenuRoute: typeof MenuRoute
   SuiviRoute: typeof SuiviRoute
 }
@@ -165,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/menu': {
       id: '/menu'
       path: '/menu'
@@ -186,15 +218,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mon-espace': {
+      id: '/_authenticated/mon-espace'
+      path: '/mon-espace'
+      fullPath: '/mon-espace'
+      preLoaderRoute: typeof AuthenticatedMonEspaceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedMonEspaceRoute: typeof AuthenticatedMonEspaceRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedMonEspaceRoute: AuthenticatedMonEspaceRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -206,6 +247,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CommandeRoute: CommandeRoute,
   ConfirmationRoute: ConfirmationRoute,
+  ConnexionRoute: ConnexionRoute,
   MenuRoute: MenuRoute,
   SuiviRoute: SuiviRoute,
 }

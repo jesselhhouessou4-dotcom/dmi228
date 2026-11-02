@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -12,6 +12,8 @@ import qr from "@/assets/mixx-qr.jpg.asset.json";
 import { useServerFn } from "@tanstack/react-start";
 import { notifyNewOrder } from "@/lib/telegram.functions";
 import { saveOrderNumber } from "@/lib/orders";
+import { useCustomer } from "@/lib/customer";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/commande")({
   head: () => ({
@@ -43,6 +45,7 @@ function CheckoutPage() {
   const cart = useCart();
   const navigate = useNavigate();
   const notify = useServerFn(notifyNewOrder);
+  const { user, profile } = useCustomer();
   const [form, setForm] = useState({ name: "", phone: "", email: "" })
   const [otype, setOtype] = useState<"immediate" | "preorder" | null>(null);
   const [when, setWhen] = useState("");
@@ -57,6 +60,11 @@ function CheckoutPage() {
   const [payment, setPayment] = useState<"mobile_money" | "cash" | null>(null);
   const [noScan, setNoScan] = useState(false);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    setForm(previous => ({ ...previous, name: previous.name || profile?.name || "", email: previous.email || user.email || "" }));
+    if (profile?.usual_location) setPlace(previous => previous || profile.usual_location);
+  }, [user, profile]);
 
   if (cart.items.length === 0) {
     return (
@@ -134,6 +142,7 @@ function CheckoutPage() {
       <SiteHeader />
       <form onSubmit={submit} className="mx-auto max-w-lg space-y-6 px-4 py-8">
         <h1 className="text-3xl font-black">Livraison</h1>
+        {!user && <div className="border-l-4 border-primary pl-4 text-sm"><p>Un compte te permet de retrouver tes commandes et de recevoir des notifications. Tu peux aussi commander sans compte.</p><Button asChild variant="link" className="mt-1 p-0"><Link to="/connexion">Me connecter ou créer un compte</Link></Button></div>}
         <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
           <Field label="Ton nom"><Input value={form.name} maxLength={100} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-12 rounded-xl" /></Field>
           <Field label="Ton numéro de téléphone"><Input type="tel" value={form.phone} maxLength={20} placeholder="90 00 00 00" onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 rounded-xl" /></Field>
