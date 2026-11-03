@@ -11,8 +11,7 @@ export function SiteHeader({ right }: { right?: ReactNode }) {
           <img src={logo.url} alt="Logo" width={40} height={40} className="h-10 w-10 shrink-0 rounded-xl" />
           <span className="hidden truncate font-display text-lg font-black sm:inline">Don't mind it !</span>
         </Link>
-        <div className="flex shrink-0 items-center gap-3">
-          <Link to="/suivi" className="text-sm font-bold underline-offset-4 hover:underline">Suivre ma commande</Link>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {right}
           <CustomerNav />
         </div>

@@ -69,7 +69,7 @@ function AdminPage() {
     navigate({ to: "/auth", replace: true });
   };
 
-  const out = <button onClick={signOut} className="shrink-0 rounded-full bg-brand-foreground px-4 py-2 text-sm font-bold text-brand">Déconnexion</button>;
+  const out = <button onClick={signOut} className="shrink-0 rounded-full bg-brand-foreground px-3 py-2 text-xs font-bold text-brand sm:px-4 sm:text-sm">Déconnexion</button>;
 
   if (isLoading) return <div className="min-h-screen"><SiteHeader right={out} /></div>;
   if (!isAdmin)
@@ -82,10 +82,10 @@ function AdminPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader right={out} />
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="text-3xl font-black">Espace admin</h1>
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+        <h1 className="text-2xl font-black sm:text-3xl">Espace admin</h1>
         <Tabs defaultValue="orders" className="mt-6">
-          <TabsList className="h-auto flex-wrap rounded-3xl">
+          <TabsList className="flex h-auto w-full justify-start overflow-x-auto rounded-3xl sm:w-auto">
             <TabsTrigger value="orders" className="rounded-full">Commandes</TabsTrigger>
             <TabsTrigger value="dishes" className="rounded-full">Articles</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full">Horaires</TabsTrigger>
@@ -329,8 +329,8 @@ function Dishes() {
           <p className="text-sm font-semibold">Formats & prix {category === "boisson" ? "(ex. 33cl, 50cl, 1L)" : "(facultatif)"}</p>
           {formats.map((f, k) => (
             <div key={k} className="flex gap-2">
-              <Input placeholder="Format" value={f.name} maxLength={40} onChange={(e) => setFormats(formats.map((x, j) => j === k ? { ...x, name: e.target.value } : x))} className="h-10 rounded-xl" />
-              <Input placeholder="Prix" type="number" min={0} value={f.price} onChange={(e) => setFormats(formats.map((x, j) => j === k ? { ...x, price: e.target.value } : x))} className="h-10 w-24 rounded-xl" />
+              <Input placeholder="Format" value={f.name} maxLength={40} onChange={(e) => setFormats(formats.map((x, j) => j === k ? { ...x, name: e.target.value } : x))} className="h-10 min-w-0 flex-1 rounded-xl" />
+              <Input placeholder="Prix" type="number" min={0} value={f.price} onChange={(e) => setFormats(formats.map((x, j) => j === k ? { ...x, price: e.target.value } : x))} className="h-10 w-20 shrink-0 rounded-xl" />
               <button type="button" aria-label="Retirer le format" onClick={() => setFormats(formats.filter((_, j) => j !== k))} className="rounded-full p-2 hover:bg-secondary"><X className="h-4 w-4" /></button>
             </div>
           ))}
@@ -483,9 +483,9 @@ function Customers() {
       <div className="space-y-2">
         <h3 className="font-bold">{data.length} client(s) inscrit(s)</h3>
         {data.map(c => (
-          <div key={c.id} className="flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
-            <div><div className="font-bold">{c.name || "—"}</div><div className="text-muted-foreground">{c.email}{c.usual_location ? ` · ${c.usual_location}` : ""}</div></div>
-            <div className="font-bold">{Number(c.order_count)} commande(s)</div>
+          <div key={c.id} className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3 text-sm">
+            <div className="min-w-0"><div className="truncate font-bold">{c.name || "—"}</div><div className="break-words text-muted-foreground">{c.email}{c.usual_location ? ` · ${c.usual_location}` : ""}</div></div>
+            <div className="shrink-0 font-bold">{Number(c.order_count)} cmd</div>
           </div>
         ))}
       </div>
