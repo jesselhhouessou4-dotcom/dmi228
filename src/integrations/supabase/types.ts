@@ -97,6 +97,36 @@ export type Database = {
         }
         Relationships: []
       }
+      extras: {
+        Row: {
+          categories: string[]
+          created_at: string
+          dish_ids: string[]
+          id: string
+          is_available: boolean
+          name: string
+          price: number
+        }
+        Insert: {
+          categories?: string[]
+          created_at?: string
+          dish_ids?: string[]
+          id?: string
+          is_available?: boolean
+          name: string
+          price?: number
+        }
+        Update: {
+          categories?: string[]
+          created_at?: string
+          dish_ids?: string[]
+          id?: string
+          is_available?: boolean
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cancel_notified: boolean
