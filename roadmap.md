@@ -5,6 +5,6 @@
 
 - [x] Notifications Telegram à l'admin pour chaque commande (code prêt — attend un premier message de l'admin au bot @DMI228_BOT)
 - [x] Menu séparé Plats / Desserts avec onglets + champ Catégorie dans l'admin
-- [ ] Comptes clients et profil nom / lieu habituel, commande sans compte conservée.
-- [ ] Historique privé, suivi et recommandation, notifications de statut et générales.
-- [ ] Liste des clients et envoi de messages admin ; vérification des accès et parcours complet.
+- [x] Comptes clients et profil nom / lieu habituel, commande sans compte conservée.
+- [x] Historique privé, suivi et recommandation, notifications de statut et générales.
+- [x] Liste des clients et envoi de messages admin ; vérification des accès et parcours complet.
