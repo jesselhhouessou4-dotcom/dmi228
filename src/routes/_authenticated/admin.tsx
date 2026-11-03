@@ -90,11 +90,13 @@ function AdminPage() {
             <TabsTrigger value="dishes" className="rounded-full">Articles</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full">Horaires</TabsTrigger>
             <TabsTrigger value="admins" className="rounded-full">Admins</TabsTrigger>
+            <TabsTrigger value="customers" className="rounded-full">Clients</TabsTrigger>
           </TabsList>
           <TabsContent value="orders"><Orders /></TabsContent>
           <TabsContent value="dishes"><Dishes /></TabsContent>
           <TabsContent value="settings"><Settings /></TabsContent>
           <TabsContent value="admins"><Admins myId={user.id} /></TabsContent>
+          <TabsContent value="customers"><Customers /></TabsContent>
         </Tabs>
       </main>
     </div>
@@ -455,6 +457,38 @@ function Admins({ myId }: { myId: string }) {
           {a.user_id !== myId && <button onClick={() => remove(a.user_id)} aria-label="Retirer" className="rounded-full p-2 text-destructive hover:bg-secondary"><Trash2 className="h-4 w-4" /></button>}
         </div>
       ))}
+    </div>
+  );
+}
+
+function Customers() {
+  const [title, setTitle] = useState(""); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false);
+  const { data = [] } = useQuery({ queryKey: ["admin-customers"], queryFn: async () => {
+    const { data, error } = await supabase.rpc("admin_customers"); if (error) throw error; return data ?? [];
+  }});
+  async function send(e: React.FormEvent) {
+    e.preventDefault(); if (!title.trim() || !message.trim()) return; setBusy(true);
+    const { data: n, error } = await supabase.rpc("admin_broadcast", { _title: title, _message: message });
+    setBusy(false); if (error) { toast.error(error.message); return; }
+    toast.success(`Message envoyé à ${n ?? 0} client(s)`); setTitle(""); setMessage("");
+  }
+  return (
+    <div className="space-y-6">
+      <form onSubmit={send} className="space-y-2 rounded-2xl border bg-card p-4">
+        <h3 className="font-bold">Envoyer un message à tous les clients</h3>
+        <Input placeholder="Titre (ex : Nouveau plat !)" value={title} onChange={e => setTitle(e.target.value)} maxLength={100} />
+        <Textarea placeholder="Message" value={message} onChange={e => setMessage(e.target.value)} maxLength={500} />
+        <button disabled={busy} className="rounded-full bg-brand px-4 py-2 font-bold text-brand-foreground disabled:opacity-50">Envoyer</button>
+      </form>
+      <div className="space-y-2">
+        <h3 className="font-bold">{data.length} client(s) inscrit(s)</h3>
+        {data.map(c => (
+          <div key={c.id} className="flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
+            <div><div className="font-bold">{c.name || "—"}</div><div className="text-muted-foreground">{c.email}{c.usual_location ? ` · ${c.usual_location}` : ""}</div></div>
+            <div className="font-bold">{Number(c.order_count)} commande(s)</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

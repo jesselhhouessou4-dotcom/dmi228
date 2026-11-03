@@ -8,7 +8,7 @@ export function reorderItems(items: PastItem[], dishes: AvailableDish[]) {
     const dish = dishes.find(d => d.id === item.dish_id && d.published && d.is_available);
     const format = dish?.formats.find(f => f.name === item.format);
     if (!dish || (item.format && !format) || (!item.format && dish.formats.length)) { skipped++; continue; }
-    ready.push({ dish_id: dish.id, name: dish.name, price: format?.price ?? dish.price, image_url: dish.image_url, category: dish.category, format: item.format, quantity: Math.max(1, Math.min(99, item.quantity)) });
+    ready.push({ dish_id: dish.id, name: dish.name, price: format?.price ?? dish.price, image_url: dish.image_url, category: dish.category, format: item.format ?? null, quantity: Math.max(1, Math.min(99, item.quantity)) });
   }
   return { ready, skipped };
 }
