@@ -78,6 +78,13 @@
       "when": 1793582512922,
       "tag": "0010_customer_space_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793666321832,
+      "tag": "0011_extras",
+      "breakpoints": true
     }
   ]
 }
