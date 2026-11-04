@@ -181,7 +181,7 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
   if (!dish) return null;
   const current = fmt ?? dish.formats?.[0]?.name ?? null;
   const available = extrasForDish(allExtras, dish);
-  const picked: ChosenExtra[] = available.filter((e) => (chosen[e.id] ?? 0) > 0).map((e) => ({ id: e.id, name: e.name, price: e.price, quantity: chosen[e.id] }));
+  const picked: ChosenExtra[] = available.filter((e) => (chosen[e.id] ?? 0) > 0).map((e) => ({ id: e.id, name: e.name, price: e.price, quantity: chosen[e.id] ?? 0 }));
   const price = unitPrice(dish.formats?.find((f) => f.name === current)?.price ?? dish.price, picked);
   return (
     <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); setChosen({}); } }}>
