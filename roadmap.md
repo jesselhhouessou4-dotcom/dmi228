@@ -7,4 +7,5 @@
 - [x] Menu séparé Plats / Desserts avec onglets + champ Catégorie dans l'admin
 - [x] Comptes clients et profil nom / lieu habituel, commande sans compte conservée.
 - [x] Historique privé, suivi et recommandation, notifications de statut et générales.
+- [x] Suppléments : gestion admin, choix dans la fiche du plat, panier, total, alertes, suivi et historique.
 - [x] Liste des clients et envoi de messages admin ; vérification des accès et parcours complet.
