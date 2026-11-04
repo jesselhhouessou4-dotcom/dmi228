@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ChevronDown, CupSoda, Minus, Plus, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { ChevronDown, CupSoda, Minus, Plus, ShoppingBag, UtensilsCrossed, X } from "lucide-react";
+import { extrasForDish, unitPrice, type ChosenExtra, type Extra } from "@/lib/extras";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart, formatPrice } from "@/lib/cart";
@@ -30,14 +31,49 @@ export const Route = createFileRoute("/menu")({
 
 function useAddDish() {
   const { add } = useCart();
-  return (dish: Dish, qty: number, formatName?: string | null) => {
+  return (dish: Dish, qty: number, formatName?: string | null, extras: ChosenExtra[] = []) => {
     const f = dish.formats?.find((x) => x.name === formatName);
     add({
       dish_id: dish.id, name: f ? `${dish.name} (${f.name})` : dish.name, price: f ? f.price : dish.price,
-      image_url: dish.image_url, format: f?.name ?? null, category: dish.category,
+      image_url: dish.image_url, format: f?.name ?? null, category: dish.category, extras,
     }, qty);
     toast.success(`${qty} × ${dish.name}${f ? ` (${f.name})` : ""} ajouté au panier`);
   };
+}
+
+function useExtras() {
+  return useQuery({
+    queryKey: ["extras", "public"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("extras").select("id,name,price,is_available,categories,dish_ids").eq("is_available", true).order("name");
+      if (error) throw error;
+      return data as Extra[];
+    },
+  });
+}
+
+function ExtrasPicker({ list, chosen, setChosen }: { list: Extra[]; chosen: Record<string, number>; setChosen: (c: Record<string, number>) => void }) {
+  if (!list.length) return null;
+  return (
+    <div>
+      <p className="mb-2 text-sm font-bold">Suppléments</p>
+      <div className="space-y-2">
+        {list.map((e) => {
+          const q = chosen[e.id] ?? 0;
+          return (
+            <div key={e.id} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-3 py-2">
+              <div className="min-w-0"><p className="truncate text-sm font-semibold">{e.name}</p><p className="text-xs text-muted-foreground">+ {formatPrice(e.price)}</p></div>
+              <div className="flex shrink-0 items-center gap-1">
+                <button type="button" disabled={!q} onClick={() => setChosen({ ...chosen, [e.id]: q - 1 })} className="grid h-8 w-8 place-items-center rounded-full bg-card disabled:opacity-40" aria-label={`Retirer ${e.name}`}><Minus className="h-4 w-4" /></button>
+                <span className="w-6 text-center font-bold">{q}</span>
+                <button type="button" onClick={() => setChosen({ ...chosen, [e.id]: Math.min(10, q + 1) })} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label={`Ajouter ${e.name}`}><Plus className="h-4 w-4" /></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function Img({ dish, className }: { dish: Dish; className: string }) {
@@ -140,11 +176,15 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
   const addDish = useAddDish();
   const [qty, setQty] = useState(1);
   const [fmt, setFmt] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<Record<string, number>>({});
+  const { data: allExtras = [] } = useExtras();
   if (!dish) return null;
   const current = fmt ?? dish.formats?.[0]?.name ?? null;
-  const price = dish.formats?.find((f) => f.name === current)?.price ?? dish.price;
+  const available = extrasForDish(allExtras, dish);
+  const picked: ChosenExtra[] = available.filter((e) => (chosen[e.id] ?? 0) > 0).map((e) => ({ id: e.id, name: e.name, price: e.price, quantity: chosen[e.id] }));
+  const price = unitPrice(dish.formats?.find((f) => f.name === current)?.price ?? dish.price, picked);
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); } }}>
+    <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); setChosen({}); } }}>
       <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-lg">
         <Img dish={dish} className="aspect-[4/3] w-full" />
         <div className="space-y-4 p-5">
@@ -159,9 +199,10 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
           {dish.is_available ? (
             <>
               <FormatPicker dish={dish} value={current} onChange={setFmt} />
+              <ExtrasPicker list={available} chosen={chosen} setChosen={setChosen} />
               <div className="flex items-center justify-between gap-2">
                 <Qty qty={qty} setQty={setQty} />
-                <button onClick={() => { addDish(dish, qty, current); setQty(1); }} className="rounded-full bg-primary px-5 py-3 font-bold text-primary-foreground">
+                <button onClick={() => { addDish(dish, qty, current, picked); setQty(1); setChosen({}); }} className="rounded-full bg-primary px-5 py-3 font-bold text-primary-foreground">
                   Ajouter · {formatPrice(price * qty)}
                 </button>
               </div>
@@ -207,7 +248,15 @@ function MenuPage() {
             <div key={i.key} className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{i.name}</p>
-                <p className="text-sm text-muted-foreground">{formatPrice(i.price * i.quantity)}</p>
+                {i.extras?.map((e) => (
+                  <div key={e.id} className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="min-w-0 flex-1 truncate">+ {e.quantity} × {e.name} ({formatPrice(e.price)})</span>
+                    <button onClick={() => cart.setExtraQty(i.key, e.id, e.quantity - 1)} className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-card" aria-label={`Moins de ${e.name}`}><Minus className="h-3 w-3" /></button>
+                    <button onClick={() => cart.setExtraQty(i.key, e.id, e.quantity + 1)} className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-card" aria-label={`Plus de ${e.name}`}><Plus className="h-3 w-3" /></button>
+                    <button onClick={() => cart.setExtraQty(i.key, e.id, 0)} className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-card" aria-label={`Retirer ${e.name}`}><X className="h-3 w-3" /></button>
+                  </div>
+                ))}
+                <p className="text-sm text-muted-foreground">{i.quantity > 1 ? `${i.quantity} × ${formatPrice(i.price)} = ` : ""}{formatPrice(i.price * i.quantity)}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <button onClick={() => cart.setQty(i.key, i.quantity - 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Moins"><Minus className="h-4 w-4" /></button>
