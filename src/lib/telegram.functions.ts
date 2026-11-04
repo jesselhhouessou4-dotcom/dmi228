@@ -32,8 +32,8 @@ export const notifyNewOrder = createServerFn({ method: "POST" })
     // Order alerts go only to the team group chat.
     const chatId = TEAM_CHAT_ID;
 
-    const items = (order.items as Array<{ name: string; quantity: number; price: number }>) ?? [];
-    const lines = items.map((i) => `• ${i.quantity} × ${esc(i.name)}`).join("\n");
+    const items = (order.items as Array<{ name: string; quantity: number; price: number; extras?: { name: string; price: number; quantity: number }[] }>) ?? [];
+    const lines = items.map((i) => [`• ${i.quantity} × ${esc(i.name)}`, ...(i.extras ?? []).map((e) => `   + ${e.quantity} × ${esc(e.name)} (${e.price.toLocaleString("fr-FR")} FCFA)`)].join("\n")).join("\n");
     const text = [
       `🛎️ <b>Nouvelle commande ${esc(order.order_number ?? "")} !</b>`,
       order.order_type === "preorder" && order.scheduled_at

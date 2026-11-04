@@ -27,7 +27,7 @@ export const Route = createFileRoute("/suivi")({
   component: Suivi,
 });
 
-type Item = { name: string; quantity: number; price: number; format?: string | null };
+type Item = { name: string; quantity: number; price: number; format?: string | null; extras?: { name: string; price: number; quantity: number }[] };
 
 function Suivi() {
   const { n } = Route.useSearch();
@@ -113,7 +113,10 @@ function Suivi() {
 
             <div className="mt-6 space-y-1 border-t pt-4 text-sm">
               {(order.items as unknown as Item[]).map((i, k) => (
-                <div key={k} className="flex justify-between gap-2"><span>{i.quantity} × {i.name}{i.format && !i.name.includes(i.format) ? ` (${i.format})` : ""}</span><span>{formatPrice(i.price * i.quantity)}</span></div>
+                <div key={k}>
+                  <div className="flex justify-between gap-2"><span>{i.quantity} × {i.name}{i.format && !i.name.includes(i.format) ? ` (${i.format})` : ""}</span><span className="shrink-0">{formatPrice(i.price * i.quantity)}</span></div>
+                  {i.extras?.map((e, j) => <p key={j} className="pl-4 text-xs text-muted-foreground">+ {e.quantity} × {e.name} ({formatPrice(e.price)})</p>)}
+                </div>
               ))}
             </div>
             <div className="mt-4 space-y-1 border-t pt-4 text-sm">

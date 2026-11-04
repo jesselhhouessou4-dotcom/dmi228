@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/mon-espace")({
   head: () => ({ meta: [ { title: "Mon espace — Don't mind it !" }, { name: "description", content: "Tes commandes, ton profil et tes notifications DMI." }, { property: "og:title", content: "Mon espace — Don't mind it !" }, { property: "og:description", content: "Retrouve tes commandes et tes notifications." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" } ] }),
   component: CustomerSpace,
 });
-type Line = { dish_id: string; name: string; quantity: number; price: number; format?: string | null };
+type Line = { dish_id: string; name: string; quantity: number; price: number; format?: string | null; extras?: { id: string; name: string; price: number; quantity: number }[] };
 function lines(value: Json): Line[] { return Array.isArray(value) ? value as unknown as Line[] : []; }
 function CustomerSpace() {
   const { user } = Route.useRouteContext(); const { tab } = Route.useSearch();
@@ -47,7 +47,8 @@ function CustomerSpace() {
     setBusy(id);
     try {
       const { data: dishes, error } = await supabase.from("dishes").select("*").eq("published", true); if (error) throw error;
-      const result = reorderItems(lines(items), (dishes ?? []).map(d => ({ ...d, formats: d.formats as { name: string; price: number }[] })));
+      const { data: extras } = await supabase.from("extras").select("id,name,price,is_available,categories,dish_ids").eq("is_available", true);
+      const result = reorderItems(lines(items), (dishes ?? []).map(d => ({ ...d, formats: d.formats as { name: string; price: number }[] })), extras ?? []);
       if (!result.ready.length) { toast.error("Ces articles ne sont plus disponibles."); return; }
       if (cart.count && !window.confirm("Remplacer le panier actuel par cette commande ?")) return;
       cart.clear(); result.ready.forEach(({ quantity, ...item }) => cart.add(item, quantity));
@@ -63,7 +64,7 @@ function CustomerSpace() {
       <TabsContent value="orders">
         {!data.orders.length ? <div className="py-12"><p className="mb-5 text-muted-foreground">Tu n’as pas encore de commande associée à ton compte.</p><Button asChild><Link to="/menu">Commander</Link></Button></div> : <div className="mt-5 grid gap-4 md:grid-cols-2">{data.orders.map(o => <article key={o.id} className="rounded-lg border bg-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-2"><div><Button asChild variant="link" className="h-auto p-0 text-lg font-black"><Link to="/suivi" search={{ n: o.order_number ?? undefined }}>{o.order_number}</Link></Button><p className="mt-1 text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString("fr-FR")}</p></div><span className={o.status === "annulée" ? "font-bold text-destructive" : "font-bold text-primary"}>{TRACK_STEPS.find(s => s.v === o.status)?.l ?? "Annulée"}</span></div>
-          <ul className="my-4 space-y-2 text-sm">{lines(o.items).map((i,k) => <li key={k} className="flex justify-between gap-3"><span>{i.quantity} × {i.name}</span><span className="shrink-0">{formatPrice(i.price * i.quantity)}</span></li>)}</ul>
+          <ul className="my-4 space-y-2 text-sm">{lines(o.items).map((i,k) => <li key={k}><div className="flex justify-between gap-3"><span>{i.quantity} × {i.name}</span><span className="shrink-0">{formatPrice(i.price * i.quantity)}</span></div>{i.extras?.map((e, j) => <p key={j} className="pl-4 text-xs text-muted-foreground">+ {e.quantity} × {e.name} ({formatPrice(e.price)})</p>)}</li>)}</ul>
           <div className="flex flex-wrap justify-between gap-2 border-t pt-3"><span className="text-sm">{o.payment_method === "cash" ? "Cash" : "Mobile money"}</span><strong>{formatPrice(o.total)}</strong></div>
           <div className="mt-4 flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/suivi" search={{ n: o.order_number ?? undefined }}>Détail et suivi</Link></Button><Button disabled={busy === o.id} onClick={() => reorder(o.id,o.items)}><RotateCcw />{busy === o.id ? "Patiente…" : "Recommander"}</Button></div>
         </article>)}</div>}
