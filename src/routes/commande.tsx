@@ -120,7 +120,7 @@ function CheckoutPage() {
       _delivery_location: location.slice(0, 600),
       _payment_method: payment,
       _note: cart.note,
-      _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity, format: i.format ?? null })),
+      _items: cart.items.map((i) => ({ dish_id: i.dish_id, quantity: i.quantity, format: i.format ?? null, extras: (i.extras ?? []).map((e) => ({ id: e.id, quantity: e.quantity })) })),
     });
     let num: string | undefined;
     if (!error && orderId) {
@@ -217,7 +217,10 @@ function CheckoutPage() {
 
         <div className="rounded-[2rem] bg-card p-5 shadow-bubble">
           {cart.items.map((i) => (
-            <div key={i.key} className="flex justify-between py-1 text-sm"><span>{i.quantity} × {i.name}</span><span>{formatPrice(i.price * i.quantity)}</span></div>
+            <div key={i.key} className="py-1 text-sm">
+              <div className="flex justify-between gap-2"><span>{i.quantity} × {i.name}</span><span className="shrink-0">{formatPrice(i.price * i.quantity)}</span></div>
+              {i.extras?.map((e) => <p key={e.id} className="pl-4 text-xs text-muted-foreground">+ {e.quantity} × {e.name} ({formatPrice(e.price)})</p>)}
+            </div>
           ))}
           {cart.note && <p className="mt-2 text-sm italic text-muted-foreground">« {cart.note} »</p>}
           <div className="mt-3 flex justify-between border-t pt-3 text-lg font-bold"><span>Total</span><span>{formatPrice(cart.total)}</span></div>
