@@ -1,6 +1,6 @@
 # Dmi228
 
-Implement exactly the screenshot and nothing else
+
 
 
 
