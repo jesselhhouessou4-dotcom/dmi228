@@ -34,7 +34,7 @@ type Dish = {
   id: string; name: string; price: number; image_url: string | null; published: boolean; category: Cat;
   ingredients: string | null; formats: DishFormat[]; is_available: boolean; featured: boolean; in_carousel: boolean;
 };
-type OrderItem = { name: string; price: number; quantity: number; format?: string | null };
+type OrderItem = { name: string; price: number; quantity: number; format?: string | null; extras?: { name: string; price: number; quantity: number }[] };
 type Order = {
   id: string; customer_name: string; delivery_time: string; delivery_location: string; payment_method: string;
   customer_phone: string | null; customer_email: string | null; order_type: string; scheduled_at: string | null;
@@ -88,12 +88,14 @@ function AdminPage() {
           <TabsList className="flex h-auto w-full justify-start overflow-x-auto rounded-3xl sm:w-auto">
             <TabsTrigger value="orders" className="rounded-full">Commandes</TabsTrigger>
             <TabsTrigger value="dishes" className="rounded-full">Articles</TabsTrigger>
+            <TabsTrigger value="extras" className="rounded-full">Suppléments</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full">Horaires</TabsTrigger>
             <TabsTrigger value="admins" className="rounded-full">Admins</TabsTrigger>
             <TabsTrigger value="customers" className="rounded-full">Clients</TabsTrigger>
           </TabsList>
           <TabsContent value="orders"><Orders /></TabsContent>
           <TabsContent value="dishes"><Dishes /></TabsContent>
+          <TabsContent value="extras"><ExtrasAdmin /></TabsContent>
           <TabsContent value="settings"><Settings /></TabsContent>
           <TabsContent value="admins"><Admins myId={user.id} /></TabsContent>
           <TabsContent value="customers"><Customers /></TabsContent>
@@ -206,7 +208,7 @@ function Orders() {
                 </select>
               </div>
               <div className="mt-3 space-y-1 text-sm">
-                {o.items.map((i, k) => <div key={k} className="flex justify-between"><span>{i.quantity} × {i.name}{i.format && !i.name.includes(i.format) ? ` (${i.format})` : ""}</span><span>{formatPrice(i.price * i.quantity)}</span></div>)}
+                {o.items.map((i, k) => <div key={k}><div className="flex justify-between gap-2"><span>{i.quantity} × {i.name}{i.format && !i.name.includes(i.format) ? ` (${i.format})` : ""}</span><span className="shrink-0">{formatPrice(i.price * i.quantity)}</span></div>{i.extras?.map((e, j) => <p key={j} className="pl-4 text-xs font-semibold text-muted-foreground">+ {e.quantity} × {e.name} ({formatPrice(e.price)})</p>)}</div>)}
               </div>
               {o.note && <p className="mt-2 rounded-xl bg-secondary p-2 text-sm">📝 {o.note}</p>}
               <div className="mt-3 space-y-1 border-t pt-3 text-sm">
@@ -366,6 +368,91 @@ function Dishes() {
               <Toggle label="Plat du moment" checked={d.featured} onChange={(v) => toggle(d, "featured", v)} />
               <Toggle label="Carrousel" checked={d.in_carousel} onChange={(v) => toggle(d, "in_carousel", v)} />
             </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type ExtraRow = { id: string; name: string; price: number; is_available: boolean; categories: string[]; dish_ids: string[] };
+
+function ExtrasAdmin() {
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<ExtraRow | null>(null);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [cats, setCats] = useState<string[]>([]);
+  const [dishIds, setDishIds] = useState<string[]>([]);
+  const { data: extras = [] } = useQuery({
+    queryKey: ["extras", "all"],
+    queryFn: async () => { const { data, error } = await supabase.from("extras").select("*").order("name"); if (error) throw error; return data as ExtraRow[]; },
+  });
+  const { data: dishes = [] } = useQuery({
+    queryKey: ["dishes", "all"],
+    queryFn: async () => { const { data, error } = await supabase.from("dishes").select("*").order("created_at"); if (error) throw error; return data as unknown as Dish[]; },
+  });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["extras"] });
+  const reset = () => { setEditing(null); setName(""); setPrice(""); setCats([]); setDishIds([]); };
+  const flip = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = parseInt(price, 10);
+    if (!name.trim() || isNaN(p) || p < 0) { toast.error("Nom et prix requis"); return; }
+    if (!cats.length && !dishIds.length) { toast.error("Choisis au moins une catégorie ou un plat"); return; }
+    const payload = { name: name.trim().slice(0, 60), price: p, categories: cats, dish_ids: dishIds };
+    const { error } = editing ? await supabase.from("extras").update(payload).eq("id", editing.id) : await supabase.from("extras").insert(payload);
+    if (error) { toast.error(error.message); return; }
+    toast.success(editing ? "Supplément modifié" : "Supplément ajouté"); reset(); refresh();
+  };
+  const remove = async (x: ExtraRow) => {
+    if (!confirm(`Supprimer « ${x.name} » ?`)) return;
+    const { error } = await supabase.from("extras").delete().eq("id", x.id); if (error) toast.error(error.message); refresh();
+  };
+  const setAvail = async (x: ExtraRow, v: boolean) => {
+    const { error } = await supabase.from("extras").update({ is_available: v }).eq("id", x.id); if (error) toast.error(error.message); refresh();
+  };
+  const target = (x: ExtraRow) => [...x.categories.map((c) => `${categoryLabel(c)}s`), ...dishes.filter((d) => x.dish_ids.includes(d.id)).map((d) => d.name)].join(", ");
+
+  return (
+    <div className="mt-4 grid gap-6 md:grid-cols-[340px_1fr]">
+      <form onSubmit={save} className="h-fit space-y-3 rounded-[2rem] bg-card p-5 shadow-bubble">
+        <h2 className="text-xl font-black">{editing ? "Modifier le supplément" : "Nouveau supplément"}</h2>
+        <Input placeholder="Nom (ex. Viande en plus)" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} className="h-11 rounded-xl" />
+        <Input placeholder="Prix (FCFA)" type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className="h-11 rounded-xl" />
+        <div>
+          <p className="mb-1 text-sm font-semibold">Pour toute une catégorie</p>
+          <div className="grid grid-cols-3 gap-2">
+            {(["plat", "dessert", "boisson"] as const).map((c) => (
+              <button key={c} type="button" onClick={() => setCats(flip(cats, c))} className={`h-10 rounded-full border-2 text-sm font-bold ${cats.includes(c) ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>{categoryLabel(c)}s</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-sm font-semibold">Ou seulement certains articles</p>
+          <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border p-2">
+            {dishes.map((d) => (
+              <label key={d.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={dishIds.includes(d.id)} onChange={() => setDishIds(flip(dishIds, d.id))} className="h-4 w-4 accent-primary" /><span className="truncate">{d.name}</span></label>
+            ))}
+          </div>
+        </div>
+        <button className="h-11 w-full rounded-full bg-primary font-bold text-primary-foreground">Enregistrer</button>
+        {editing && <button type="button" onClick={reset} className="w-full text-sm text-muted-foreground underline">Annuler</button>}
+      </form>
+      <div className="space-y-3">
+        {!extras.length && <p className="text-muted-foreground">Aucun supplément pour le moment.</p>}
+        {extras.map((x) => (
+          <div key={x.id} className="rounded-2xl bg-card p-3 shadow-bubble">
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold">{x.name} · {formatPrice(x.price)}</p>
+                <p className="break-words text-xs text-muted-foreground">{target(x) || "Aucun plat"}</p>
+              </div>
+              <button onClick={() => { setEditing(x); setName(x.name); setPrice(String(x.price)); setCats(x.categories); setDishIds(x.dish_ids); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="shrink-0 rounded-full p-2 hover:bg-secondary" aria-label="Modifier"><Pencil className="h-4 w-4" /></button>
+              <button onClick={() => remove(x)} className="shrink-0 rounded-full p-2 text-destructive hover:bg-secondary" aria-label="Supprimer"><Trash2 className="h-4 w-4" /></button>
+            </div>
+            <div className="mt-2 text-xs"><Toggle label={x.is_available ? "Disponible" : "Épuisé"} checked={x.is_available} onChange={(v) => setAvail(x, v)} /></div>
           </div>
         ))}
       </div>
