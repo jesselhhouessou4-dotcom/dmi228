@@ -192,7 +192,7 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
     <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); setChosen({}); } }}>
       <DialogContent className="bottom-0 left-0 top-auto max-h-[92vh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-b-none rounded-t-3xl p-0 data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl">
         <Img dish={dish} className="aspect-[16/10] w-full sm:aspect-[4/3]" />
-        <div className="space-y-4 p-4 sm:p-5">
+        <div className="min-w-0 space-y-4 p-4 sm:p-5">
           <div>
             <span className="text-xs font-bold uppercase text-muted-foreground">{categoryLabel(dish.category)}</span>
             <DialogTitle className="font-display text-2xl">{dish.name}</DialogTitle>
@@ -207,7 +207,7 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
               <ExtrasPicker list={available} chosen={chosen} setChosen={setChosen} />
               <div className="flex items-center justify-between gap-2">
                 <Qty qty={qty} setQty={setQty} />
-                <button onClick={() => { addDish(dish, qty, current, picked); setQty(1); setChosen({}); }} className="rounded-full bg-primary px-5 py-3 font-bold text-primary-foreground">
+                <button onClick={() => { addDish(dish, qty, current, picked); setQty(1); setChosen({}); }} className="rounded-full bg-primary px-4 py-3 text-sm font-bold text-primary-foreground sm:px-5 sm:text-base">
                   Ajouter · {formatPrice(price * qty)}
                 </button>
               </div>
