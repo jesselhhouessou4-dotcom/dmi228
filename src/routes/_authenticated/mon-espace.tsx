@@ -69,7 +69,7 @@ function CustomerSpace() {
           <div className="mt-4 flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/suivi" search={{ n: o.order_number ?? undefined }}>Détail et suivi</Link></Button><Button disabled={busy === o.id} onClick={() => reorder(o.id,o.items)}><RotateCcw />{busy === o.id ? "Patiente…" : "Recommander"}</Button></div>
         </article>)}</div>}
       </TabsContent>
-      <TabsContent value="notifications"><div className="my-4 flex justify-end"><Button variant="outline" disabled={!unread} onClick={() => read()}><Check />Tout marquer comme lu</Button></div>
+      <TabsContent value="notifications">
         <NotificationList notifications={data.notifications} orders={data.orders} onRead={read} />
       </TabsContent>
       <TabsContent value="profile"><form onSubmit={save} className="mt-6 max-w-lg space-y-4"><label className="block text-sm font-bold">Nom<Input required maxLength={100} value={name} onChange={e => setName(e.target.value)} className="mt-1 h-12" /></label><label className="block text-sm font-bold">Lieu habituel de livraison<Input maxLength={300} value={location} onChange={e => setLocation(e.target.value)} className="mt-1 h-12" /></label><p className="break-all text-sm text-muted-foreground">{user.email}</p><Button disabled={busy === "profile"}>Enregistrer mon profil</Button></form></TabsContent>
