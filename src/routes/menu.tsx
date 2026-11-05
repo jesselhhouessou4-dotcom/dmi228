@@ -118,16 +118,16 @@ function DishCard({ dish, onOpen }: { dish: Dish; onOpen: () => void }) {
   const out = !dish.is_available;
   const price = dish.formats?.find((f) => f.name === fmt)?.price ?? dish.price;
   return (
-    <div className={`overflow-hidden rounded-[2rem] bg-card shadow-bubble ${out ? "opacity-60 grayscale" : ""}`}>
+    <div className={`overflow-hidden flex flex-col rounded-2xl sm:rounded-[2rem] bg-card shadow-bubble ${out ? "opacity-60 grayscale" : ""}`}>
       <button onClick={onOpen} className="relative block w-full text-left" aria-label={`Voir ${dish.name}`}>
-        <Img dish={dish} className="aspect-[4/3] w-full" />
-        {out && <span className="absolute left-3 top-3 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">Épuisé</span>}
-        <div className="px-5 pt-4">
-          <h3 className="text-lg font-bold">{dish.name}</h3>
-          <p className="mt-1 font-semibold text-primary">{formatPrice(price)}</p>
+        <Img dish={dish} className="aspect-square w-full sm:aspect-[4/3]" />
+        {out && <span className="absolute left-2 top-2 rounded-full bg-destructive px-2 sm:px-3 py-1 text-xs font-bold text-destructive-foreground">Épuisé</span>}
+        <div className="px-3 pt-2 sm:px-5 sm:pt-4">
+          <h3 className="line-clamp-2 text-sm font-bold leading-tight sm:text-lg">{dish.name}</h3>
+          <p className="mt-1 text-sm font-semibold text-primary sm:text-base">{formatPrice(price)}</p>
         </div>
       </button>
-      <div className="space-y-3 px-5 pt-2">
+      <div className="hidden space-y-3 px-5 pt-2 sm:block">
         {dish.ingredients && (
           <div>
             <button type="button" onClick={() => setShowIng((s) => !s)} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground">
@@ -138,7 +138,12 @@ function DishCard({ dish, onOpen }: { dish: Dish; onOpen: () => void }) {
         )}
         {!out && <FormatPicker dish={dish} value={fmt} onChange={setFmt} />}
       </div>
-      <div className="flex items-center justify-between gap-2 p-5 pt-3">
+      <div className="mt-auto p-3 pt-2 sm:hidden">
+        {out ? <p className="text-xs font-semibold text-muted-foreground">Indisponible</p> : (
+          <button onClick={() => { if ((dish.formats?.length ?? 0) > 1) onOpen(); else addDish(dish, 1, fmt); }} className="flex w-full items-center justify-center gap-1 rounded-full bg-primary py-2 text-xs font-bold text-primary-foreground active:scale-95"><Plus className="h-3.5 w-3.5" /> Ajouter</button>
+        )}
+      </div>
+      <div className="mt-auto hidden items-center justify-between gap-2 p-5 pt-3 sm:flex">
         {out ? <p className="text-sm font-semibold text-muted-foreground">Indisponible pour le moment</p> : (
           <>
             <Qty qty={qty} setQty={setQty} />
@@ -185,9 +190,9 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
   const price = unitPrice(dish.formats?.find((f) => f.name === current)?.price ?? dish.price, picked);
   return (
     <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); setChosen({}); } }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-0 sm:max-w-lg">
-        <Img dish={dish} className="aspect-[4/3] w-full" />
-        <div className="space-y-4 p-5">
+      <DialogContent className="bottom-0 top-auto max-h-[92vh] max-w-full translate-y-0 overflow-y-auto rounded-b-none rounded-t-3xl p-0 data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:top-[50%] sm:max-w-lg sm:translate-y-[-50%] sm:rounded-3xl">
+        <Img dish={dish} className="aspect-[16/10] w-full sm:aspect-[4/3]" />
+        <div className="space-y-4 p-4 sm:p-5">
           <div>
             <span className="text-xs font-bold uppercase text-muted-foreground">{categoryLabel(dish.category)}</span>
             <DialogTitle className="font-display text-2xl">{dish.name}</DialogTitle>
@@ -301,7 +306,7 @@ function MenuPage() {
             <section key={c.id} id={c.id} className="scroll-mt-32 pt-6">
               <h2 className="text-2xl font-black">{c.label}</h2>
               {dishes && list.length === 0 && <p className="mt-3 text-muted-foreground">Rien pour le moment.</p>}
-              <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
                 {list.map((d) => <DishCard key={d.id} dish={d} onOpen={() => setDetail(d)} />)}
               </div>
             </section>
