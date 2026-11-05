@@ -85,6 +85,13 @@
       "when": 1793666321832,
       "tag": "0011_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793837089363,
+      "tag": "0012_restrict_public_reads",
+      "breakpoints": true
     }
   ]
 }
