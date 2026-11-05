@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Bell, RotateCcw, LogOut, Check } from "lucide-react";
+import { Bell, RotateCcw, LogOut, Check, Inbox, Megaphone, ChefHat, Bike, PackageCheck, XCircle, ReceiptText, ChevronRight } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { getCustomerSpace } from "@/lib/customer.functions";
@@ -70,8 +70,7 @@ function CustomerSpace() {
         </article>)}</div>}
       </TabsContent>
       <TabsContent value="notifications"><div className="my-4 flex justify-end"><Button variant="outline" disabled={!unread} onClick={() => read()}><Check />Tout marquer comme lu</Button></div>
-        {!data.notifications.length && <p className="py-8 text-muted-foreground">Aucune notification pour le moment.</p>}
-        <div className="divide-y">{data.notifications.map(n => <article key={n.id} className={`py-5 ${n.read_at ? "" : "border-l-4 border-primary pl-4"}`}><div className="flex flex-wrap justify-between gap-3"><h2 className="text-lg font-bold">{n.title}</h2><span className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString("fr-FR")}</span></div><p className="mt-2 whitespace-pre-wrap break-words">{n.message}</p><div className="mt-3 flex gap-3">{n.order_id && <Button asChild variant="link" className="p-0"><Link to="/suivi" search={{ n: data.orders.find(o => o.id === n.order_id)?.order_number ?? undefined }} onClick={() => read(n.id)}>Voir la commande</Link></Button>}{!n.read_at && <Button variant="ghost" onClick={() => read(n.id)}><Check />Marquer comme lu</Button>}</div></article>)}</div>
+        <NotificationList notifications={data.notifications} orders={data.orders} onRead={read} />
       </TabsContent>
       <TabsContent value="profile"><form onSubmit={save} className="mt-6 max-w-lg space-y-4"><label className="block text-sm font-bold">Nom<Input required maxLength={100} value={name} onChange={e => setName(e.target.value)} className="mt-1 h-12" /></label><label className="block text-sm font-bold">Lieu habituel de livraison<Input maxLength={300} value={location} onChange={e => setLocation(e.target.value)} className="mt-1 h-12" /></label><p className="break-all text-sm text-muted-foreground">{user.email}</p><Button disabled={busy === "profile"}>Enregistrer mon profil</Button></form></TabsContent>
     </Tabs>
