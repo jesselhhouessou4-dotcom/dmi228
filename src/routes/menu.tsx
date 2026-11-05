@@ -190,7 +190,7 @@ function DishDetail({ dish, drinks, onClose }: { dish: Dish | null; drinks: Dish
   const price = unitPrice(dish.formats?.find((f) => f.name === current)?.price ?? dish.price, picked);
   return (
     <Dialog open onOpenChange={(o) => { if (!o) { onClose(); setQty(1); setFmt(null); setChosen({}); } }}>
-      <DialogContent className="bottom-0 top-auto max-h-[92vh] max-w-full translate-y-0 overflow-y-auto rounded-b-none rounded-t-3xl p-0 data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:top-[50%] sm:max-w-lg sm:translate-y-[-50%] sm:rounded-3xl">
+      <DialogContent className="bottom-0 left-0 top-auto max-h-[92vh] w-full max-w-full translate-x-0 translate-y-0 overflow-y-auto rounded-b-none rounded-t-3xl p-0 data-[state=open]:slide-in-from-bottom sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl">
         <Img dish={dish} className="aspect-[16/10] w-full sm:aspect-[4/3]" />
         <div className="space-y-4 p-4 sm:p-5">
           <div>
