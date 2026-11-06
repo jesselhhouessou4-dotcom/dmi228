@@ -14,6 +14,9 @@ import { notifyNewOrder } from "@/lib/telegram.functions";
 import { saveOrderNumber } from "@/lib/orders";
 import { useCustomer } from "@/lib/customer";
 import { Button } from "@/components/ui/button";
+import { useCartGroup } from "@/lib/group-pricing";
+import { groupMinDate } from "@/lib/group";
+import { GroupOrderPanel, GroupTotal } from "@/components/GroupOrderPanel";
 
 export const Route = createFileRoute("/commande")({
   head: () => ({
@@ -52,7 +55,9 @@ function CheckoutPage() {
   const { data: settings } = useQuery({ queryKey: ["shop-settings"], queryFn: async () => (await supabase.from("shop_settings").select("*").eq("id", 1).maybeSingle()).data });
   const immediateOpen = settings?.immediate_open ?? true;
   const lead = settings?.lead_minutes ?? 60;
-  const minWhen = toLocalInput(new Date(Date.now() + lead * 60000));;
+  const grp = useCartGroup();
+  const isGroup = grp.active;
+  const minWhen = toLocalInput(isGroup && grp.settings ? groupMinDate(grp.settings) : new Date(Date.now() + lead * 60000));
   const [dtype, setDtype] = useState<"etudiant" | "externe" | null>(null);
   const [place, setPlace] = useState("");
   const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
@@ -93,6 +98,13 @@ function CheckoutPage() {
     e.preventDefault();
     const parsed = schema.safeParse(form);
     if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide"); return; }
+    if (isGroup && grp.settings && grp.summary) {
+      if (!grp.summary.unlocked) { toast.error(`Encore ${grp.summary.missing} articles pour débloquer le tarif groupé`); return; }
+      if (!when) { toast.error("Choisis la date et l'heure de livraison de la commande groupée"); return; }
+      if (new Date(when).getTime() < groupMinDate(grp.settings).getTime()) { toast.error(`La commande groupée doit être passée au moins ${grp.settings.lead_hours} h à l'avance`); return; }
+      const hm = when.slice(11, 16);
+      if (settings && (hm < settings.open_time.slice(0, 5) || hm > settings.close_time.slice(0, 5))) { toast.error(`Livraison entre ${settings.open_time.slice(0, 5)} et ${settings.close_time.slice(0, 5)}`); return; }
+    } else {
     if (!otype) { toast.error("Choisis maintenant ou pré-commande"); return; }
     if (otype === "immediate" && !immediateOpen) { toast.error("Commandes immédiates fermées, choisis la pré-commande"); return; }
     if (otype === "preorder") {
@@ -100,6 +112,7 @@ function CheckoutPage() {
       if (new Date(when).getTime() < Date.now() + lead * 60000) { toast.error(`Choisis un horaire au moins ${lead} min à l'avance`); return; }
       const hm = when.slice(11, 16);
       if (settings && (hm < settings.open_time.slice(0, 5) || hm > settings.close_time.slice(0, 5))) { toast.error(`Livraison entre ${settings.open_time.slice(0, 5)} et ${settings.close_time.slice(0, 5)}`); return; }
+    }
     }
     if (!dtype) { toast.error("Indique si tu es étudiant(e) ou externe"); return; }
     const p = place.trim();
@@ -110,9 +123,9 @@ function CheckoutPage() {
       ? `Étudiant(e) — ${p}`
       : `Externe — ${[p, mapLink].filter(Boolean).join(" — ")}`;
     setLoading(true);
-    const { data: orderId, error } = await supabase.rpc("place_order_v4", {
-      _order_type: otype,
-      _scheduled_at: otype === "preorder" ? new Date(when).toISOString() : (null as unknown as string),
+    const { data: orderId, error } = await supabase.rpc("place_order_v5", {
+      _order_type: isGroup ? "group" : otype!,
+      _scheduled_at: isGroup || otype === "preorder" ? new Date(when).toISOString() : (null as unknown as string),
       _customer_name: parsed.data.name,
       _customer_phone: parsed.data.phone,
       _customer_email: parsed.data.email,
@@ -134,6 +147,7 @@ function CheckoutPage() {
     navigate({ to: "/confirmation", search: { p: payment, n: num } });
   };
 
+  const payTotal = grp.applied && grp.summary ? grp.summary.total : cart.total;
   const choice = (active: boolean) =>
     `rounded-2xl border-2 p-4 text-left font-semibold transition ${active ? "border-primary bg-secondary" : "border-border bg-card"}`;
 
@@ -149,6 +163,16 @@ function CheckoutPage() {
           <Field label="Ton e-mail (facultatif)"><Input type="email" value={form.email} maxLength={255} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 rounded-xl" /></Field>
         </div>
 
+        <GroupOrderPanel />
+        {isGroup ? (
+          <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
+            <p className="font-bold">Commande groupée : date et heure de livraison (obligatoire)</p>
+            <Field label={`Au moins ${grp.settings?.lead_hours ?? 24} h à l'avance${settings ? `, entre ${settings.open_time.slice(0, 5)} et ${settings.close_time.slice(0, 5)}` : ""}`}>
+              <Input type="datetime-local" required min={minWhen} value={when} onChange={(e) => setWhen(e.target.value)} className="h-12 rounded-xl" />
+            </Field>
+            <p className="text-xs text-muted-foreground">Un seul paiement pour toute la commande.</p>
+          </div>
+        ) : (
         <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
           <p className="font-bold">Tu veux être livré : maintenant ou plus tard (pré-commande) ?</p>
           <div className="grid grid-cols-2 gap-3">
@@ -163,6 +187,7 @@ function CheckoutPage() {
             </Field>
           )}
         </div>
+        )}
 
         <div className="space-y-4 rounded-[2rem] bg-card p-5 shadow-bubble">
           <p className="font-bold">Où te livrer ?</p>
@@ -199,7 +224,7 @@ function CheckoutPage() {
             {noScan && (
               <div className="space-y-3 rounded-2xl bg-secondary p-4 text-left text-secondary-foreground">
                 <CopyRow label="Numéro Mixx" value="99 84 85 22" raw={MIXX_NUMBER} />
-                <CopyRow label="Montant exact" value={formatPrice(cart.total)} raw={String(cart.total)} />
+                <CopyRow label="Montant exact" value={formatPrice(payTotal)} raw={String(payTotal)} />
                 <p className="text-xs font-semibold">+ les frais de transfert à ajouter</p>
                 <a href="tel:*145%23" className="flex h-11 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground">Ouvrir Mixx (*145#)</a>
                 <ol className="list-decimal space-y-1 pl-5 text-sm">
@@ -218,12 +243,13 @@ function CheckoutPage() {
         <div className="rounded-[2rem] bg-card p-5 shadow-bubble">
           {cart.items.map((i) => (
             <div key={i.key} className="py-1 text-sm">
-              <div className="flex justify-between gap-2"><span>{i.quantity} × {i.name}</span><span className="shrink-0">{formatPrice(i.price * i.quantity)}</span></div>
+              <div className="flex justify-between gap-2"><span>{i.quantity} × {i.name}</span><span className="shrink-0">{grp.applied && (grp.groupUnit(i.key) ?? i.price) < i.price ? <><s className="text-muted-foreground">{formatPrice(i.price * i.quantity)}</s> {formatPrice((grp.groupUnit(i.key) ?? i.price) * i.quantity)}</> : formatPrice(i.price * i.quantity)}</span></div>
               {i.extras?.map((e) => <p key={e.id} className="pl-4 text-xs text-muted-foreground">+ {e.quantity} × {e.name} ({formatPrice(e.price)})</p>)}
             </div>
           ))}
           {cart.note && <p className="mt-2 text-sm italic text-muted-foreground">« {cart.note} »</p>}
-          <div className="mt-3 flex justify-between border-t pt-3 text-lg font-bold"><span>Total</span><span>{formatPrice(cart.total)}</span></div>
+          <div className="mt-3 flex justify-between border-t pt-3 text-lg font-bold"><span>Total</span><GroupTotal /></div>
+          {grp.applied && grp.summary && <p className="mt-1 text-right text-sm font-bold text-primary">Total économisé : {formatPrice(grp.summary.saved)}</p>}
         </div>
 
         <button disabled={loading} className="h-14 w-full rounded-full bg-primary text-lg font-bold text-primary-foreground disabled:opacity-60">
