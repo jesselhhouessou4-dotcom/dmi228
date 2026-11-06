@@ -76,3 +76,44 @@ function CustomerSpace() {
     </Tabs>
   </main></div>;
 }
+type Notif = { id: string; title: string; message: string; read_at: string | null; created_at: string; order_id: string | null };
+function notifKind(n: Notif) {
+  const t = n.title.toLowerCase();
+  if (!n.order_id) return { Icon: Megaphone, label: "Annonce", tone: "bg-accent text-accent-foreground" };
+  if (t.includes("annul")) return { Icon: XCircle, label: "Annulée", tone: "bg-destructive/15 text-destructive" };
+  if (t.includes("livrée")) return { Icon: PackageCheck, label: "Livrée", tone: "bg-primary/15 text-primary" };
+  if (t.includes("livraison")) return { Icon: Bike, label: "En livraison", tone: "bg-primary/15 text-primary" };
+  if (t.includes("préparation")) return { Icon: ChefHat, label: "En préparation", tone: "bg-secondary text-secondary-foreground" };
+  return { Icon: ReceiptText, label: "Commande", tone: "bg-muted text-foreground" };
+}
+function ago(d: string) {
+  const m = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+  if (m < 1) return "à l’instant"; if (m < 60) return `il y a ${m} min`;
+  const h = Math.round(m / 60); if (h < 24) return `il y a ${h} h`;
+  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+function NotificationList({ notifications, orders, onRead }: { notifications: Notif[]; orders: { id: string; order_number: string | null }[]; onRead: (id?: string) => void }) {
+  const [filter, setFilter] = useState<"all" | "unread" | "orders" | "news">("all");
+  const unread = notifications.filter(n => !n.read_at).length;
+  const shown = notifications.filter(n => filter === "unread" ? !n.read_at : filter === "orders" ? !!n.order_id : filter === "news" ? !n.order_id : true);
+  const chips = [["all", "Toutes"], ["unread", `Non lues${unread ? ` · ${unread}` : ""}`], ["orders", "Commandes"], ["news", "Annonces"]] as const;
+  return <div className="mt-4 space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex gap-2 overflow-x-auto pb-1">{chips.map(([v, l]) => <button key={v} type="button" onClick={() => setFilter(v)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition-colors ${filter === v ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{l}</button>)}</div>
+      <Button variant="outline" size="sm" disabled={!unread} onClick={() => onRead()}><Check />Tout lire</Button>
+    </div>
+    {!shown.length ? <div className="flex flex-col items-center rounded-2xl border border-dashed py-12 text-center text-muted-foreground"><Inbox className="mb-3 h-10 w-10" /><p>{filter === "unread" ? "Tout est lu, bravo !" : "Aucune notification ici pour le moment."}</p></div> :
+    <ul className="space-y-3">{shown.map(n => { const k = notifKind(n); const num = orders.find(o => o.id === n.order_id)?.order_number; return <li key={n.id} className={`relative flex gap-3 rounded-2xl border p-4 shadow-sm transition-shadow hover:shadow-md ${n.read_at ? "bg-card opacity-75" : "border-primary/40 bg-primary/5"}`}>
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${k.tone}`}><k.Icon className="h-5 w-5" /></span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2 pr-3"><div className="min-w-0"><span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${k.tone}`}>{k.label}</span><h2 className="mt-1 font-black leading-tight">{n.title}</h2></div><span className="shrink-0 text-xs text-muted-foreground">{ago(n.created_at)}</span></div>
+        <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">{n.message}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {n.order_id && <Button asChild size="sm"><Link to="/suivi" search={{ n: num ?? undefined }} onClick={() => onRead(n.id)}>Suivre {num}<ChevronRight /></Link></Button>}
+          {!n.read_at && <Button variant="ghost" size="sm" onClick={() => onRead(n.id)}><Check />Marquer comme lu</Button>}
+        </div>
+      </div>
+      {!n.read_at && <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-destructive" aria-label="Non lue" />}
+    </li>; })}</ul>}
+  </div>;
+}
