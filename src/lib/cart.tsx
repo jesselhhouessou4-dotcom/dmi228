@@ -19,6 +19,8 @@ type Cart = {
   total: number;
   count: number;
   hasDrink: boolean;
+  group: boolean;
+  setGroup: (g: boolean) => void;
 };
 
 const CartContext = createContext<Cart | null>(null);
@@ -44,6 +46,7 @@ function mergeLine(prev: CartItem[], line: CartItem) {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [note, setNote] = useState("");
+  const [group, setGroup] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -53,14 +56,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const p = JSON.parse(raw);
         setItems((p.items ?? []).map((i: CartItem) => ({ ...i, key: itemKey(i.dish_id, i.format, i.extras) })));
         setNote(p.note ?? "");
+        setGroup(!!p.group);
       }
     } catch {}
     setLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (loaded) localStorage.setItem("dmi-cart", JSON.stringify({ items, note }));
-  }, [items, note, loaded]);
+    if (loaded) localStorage.setItem("dmi-cart", JSON.stringify({ items, note, group }));
+  }, [items, note, group, loaded]);
 
   const add: Cart["add"] = (item, qty = 1) =>
     setItems((prev) => {
@@ -77,12 +81,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const extras = (line.extras ?? []).map((e) => (e.id === extraId ? { ...e, quantity: Math.min(10, qty) } : e)).filter((e) => e.quantity > 0);
       return mergeLine(prev.filter((i) => i.key !== key), withExtras(line, extras));
     });
-  const clear = () => { setItems([]); setNote(""); };
+  const clear = () => { setItems([]); setNote(""); setGroup(false); };
   const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const count = items.reduce((s, i) => s + i.quantity, 0);
   const hasDrink = items.some((i) => i.category === "boisson");
 
-  return <CartContext.Provider value={{ items, note, setNote, add, setQty, setExtraQty, clear, total, count, hasDrink }}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ items, note, setNote, add, setQty, setExtraQty, clear, total, count, hasDrink, group, setGroup }}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart, formatPrice } from "@/lib/cart";
 import { CATEGORIES, DISH_COLUMNS, categoryLabel, type Dish } from "@/lib/dishes";
 import { SiteHeader } from "@/components/SiteHeader";
+import { GroupOrderPanel, GroupTotal } from "@/components/GroupOrderPanel";
+import { useCartGroup } from "@/lib/group-pricing";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -226,6 +228,7 @@ function MenuPage() {
   const [confirm, setConfirm] = useState(false);
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Dish | null>(null);
+  const grp = useCartGroup();
   const { data: dishes, isLoading } = useQuery({
     queryKey: ["dishes", "published"],
     queryFn: async () => {
@@ -261,7 +264,7 @@ function MenuPage() {
                     <button onClick={() => cart.setExtraQty(i.key, e.id, 0)} className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-card" aria-label={`Retirer ${e.name}`}><X className="h-3 w-3" /></button>
                   </div>
                 ))}
-                <p className="text-sm text-muted-foreground">{i.quantity > 1 ? `${i.quantity} × ${formatPrice(i.price)} = ` : ""}{formatPrice(i.price * i.quantity)}</p>
+                <LinePrice price={i.price} quantity={i.quantity} groupUnit={grp.applied ? grp.groupUnit(i.key) : null} />
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <button onClick={() => cart.setQty(i.key, i.quantity - 1)} className="grid h-8 w-8 place-items-center rounded-full bg-card" aria-label="Moins"><Minus className="h-4 w-4" /></button>
@@ -270,6 +273,7 @@ function MenuPage() {
               </div>
             </div>
           ))}
+          {cart.items.length > 0 && <GroupOrderPanel />}
           {cart.items.length > 0 && <DrinkSuggest drinks={drinks} />}
           {cart.items.length > 0 && (
             <div className="pt-2">
@@ -279,7 +283,8 @@ function MenuPage() {
           )}
         </div>
         <div className="border-t p-4">
-          <div className="mb-3 flex justify-between text-lg font-bold"><span>Total</span><span>{formatPrice(cart.total)}</span></div>
+          <div className="mb-3 flex justify-between text-lg font-bold"><span>Total</span><GroupTotal /></div>
+          {grp.applied && grp.summary && <p className="-mt-2 mb-3 text-right text-sm font-bold text-primary">Total économisé : {formatPrice(grp.summary.saved)}</p>}
           <button disabled={cart.items.length === 0} onClick={() => setConfirm(true)} className="h-12 w-full rounded-full bg-primary font-bold text-primary-foreground disabled:opacity-50">
             Valider ma commande
           </button>
@@ -316,7 +321,7 @@ function MenuPage() {
       <DishDetail dish={detail} drinks={drinks} onClose={() => setDetail(null)} />
       {cart.count > 0 && !open && (
         <button onClick={() => setOpen(true)} className="fixed inset-x-4 bottom-4 z-20 mx-auto flex h-14 max-w-md items-center justify-between rounded-full bg-primary px-6 font-bold text-primary-foreground shadow-bubble">
-          <span>Voir le panier ({cart.count})</span><span>{formatPrice(cart.total)}</span>
+          <span>Voir le panier ({cart.count})</span><GroupTotal />
         </button>
       )}
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
@@ -329,5 +334,15 @@ function MenuPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function LinePrice({ price, quantity, groupUnit }: { price: number; quantity: number; groupUnit: number | null }) {
+  if (groupUnit == null || groupUnit >= price)
+    return <p className="text-sm text-muted-foreground">{quantity > 1 ? `${quantity} × ${formatPrice(price)} = ` : ""}{formatPrice(price * quantity)}</p>;
+  return (
+    <p className="text-sm text-muted-foreground">
+      <s>{formatPrice(price * quantity)}</s> <span className="font-bold text-primary">{quantity > 1 ? `${quantity} × ${formatPrice(groupUnit)} = ` : ""}{formatPrice(groupUnit * quantity)}</span>
+    </p>
   );
 }
