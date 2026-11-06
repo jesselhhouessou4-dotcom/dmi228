@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { groupSummary, type GroupSettings } from "@/lib/group";
+import { groupSummary, groupUnitPrice, type GroupSettings } from "@/lib/group";
 import { useCart } from "@/lib/cart";
 
 export function useGroupSettings() {
@@ -23,5 +23,9 @@ export function useCartGroup() {
   const lines = cart.items.map((i) => ({ ...i, group_price: prices?.find((p) => p.id === i.dish_id)?.group_price ?? null }));
   const summary = settings ? groupSummary(lines, settings) : null;
   const active = !!(cart.group && settings?.enabled);
-  return { settings, lines, summary, active, applied: active && !!summary?.unlocked };
+  const groupUnit = (key: string) => {
+    const l = lines.find((x) => x.key === key);
+    return l && settings ? groupUnitPrice(l, settings) : null;
+  };
+  return { settings, lines, summary, active, applied: active && !!summary?.unlocked, groupUnit };
 }
