@@ -58,6 +58,7 @@ export type Database = {
           created_at: string
           featured: boolean
           formats: Json
+          group_price: number | null
           id: string
           image_url: string | null
           in_carousel: boolean
@@ -72,6 +73,7 @@ export type Database = {
           created_at?: string
           featured?: boolean
           formats?: Json
+          group_price?: number | null
           id?: string
           image_url?: string | null
           in_carousel?: boolean
@@ -86,6 +88,7 @@ export type Database = {
           created_at?: string
           featured?: boolean
           formats?: Json
+          group_price?: number | null
           id?: string
           image_url?: string | null
           in_carousel?: boolean
@@ -127,6 +130,36 @@ export type Database = {
         }
         Relationships: []
       }
+      group_settings: {
+        Row: {
+          discount_type: string
+          discount_value: number
+          enabled: boolean
+          id: number
+          lead_hours: number
+          min_items: number
+          updated_at: string
+        }
+        Insert: {
+          discount_type?: string
+          discount_value?: number
+          enabled?: boolean
+          id?: number
+          lead_hours?: number
+          min_items?: number
+          updated_at?: string
+        }
+        Update: {
+          discount_type?: string
+          discount_value?: number
+          enabled?: boolean
+          id?: number
+          lead_hours?: number
+          min_items?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           cancel_notified: boolean
@@ -139,11 +172,14 @@ export type Database = {
           delivery_location: string
           delivery_time: string
           delivery_type: string | null
+          discount_total: number
           id: string
+          is_group: boolean
           items: Json
           note: string | null
           order_number: string | null
           order_type: string
+          original_total: number | null
           payment_method: string
           scheduled_at: string | null
           status: string
@@ -162,11 +198,14 @@ export type Database = {
           delivery_location: string
           delivery_time: string
           delivery_type?: string | null
+          discount_total?: number
           id?: string
+          is_group?: boolean
           items: Json
           note?: string | null
           order_number?: string | null
           order_type?: string
+          original_total?: number | null
           payment_method: string
           scheduled_at?: string | null
           status?: string
@@ -185,11 +224,14 @@ export type Database = {
           delivery_location?: string
           delivery_time?: string
           delivery_type?: string | null
+          discount_total?: number
           id?: string
+          is_group?: boolean
           items?: Json
           note?: string | null
           order_number?: string | null
           order_type?: string
+          original_total?: number | null
           payment_method?: string
           scheduled_at?: string | null
           status?: string
@@ -363,6 +405,21 @@ export type Database = {
         Returns: string
       }
       place_order_v4: {
+        Args: {
+          _customer_email: string
+          _customer_name: string
+          _customer_phone: string
+          _delivery_location: string
+          _delivery_type: string
+          _items: Json
+          _note: string
+          _order_type: string
+          _payment_method: string
+          _scheduled_at: string
+        }
+        Returns: string
+      }
+      place_order_v5: {
         Args: {
           _customer_email: string
           _customer_name: string
