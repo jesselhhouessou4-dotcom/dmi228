@@ -190,6 +190,7 @@ function Orders() {
           <option value="all">Tous les types</option>
           <option value="immediate">Immédiates</option>
           <option value="preorder">Pré-commandes</option>
+          <option value="group">Groupées</option>
         </select>
         <input aria-label="Filtrer par date" type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} className={sel} />
         {(fStatus !== "all" || fType !== "all" || fDate) && <button onClick={() => { setFStatus("all"); setFType("all"); setFDate(""); }} className="text-sm underline">Effacer</button>}
@@ -220,7 +221,8 @@ function Orders() {
                 {o.customer_email && <p className="truncate"><b>E-mail :</b> {o.customer_email}</p>}
                 <p className="break-words"><b>Lieu :</b> {o.delivery_location}</p>
                 <p><b>Paiement :</b> {o.payment_method === "cash" ? "Cash à la livraison" : "Mobile money (Mixx)"}</p>
-                <p className="text-base font-bold">Total : {formatPrice(o.total)}</p>
+                <p className="text-base font-bold">Total : {o.discount_total ? <s className="mr-1 text-sm text-muted-foreground">{formatPrice(o.original_total ?? 0)}</s> : null}{formatPrice(o.total)}</p>
+                {!!o.discount_total && <p className="text-xs font-bold text-primary">Remise groupée : -{formatPrice(o.discount_total)}</p>}
               </div>
             </div>
           ))}
