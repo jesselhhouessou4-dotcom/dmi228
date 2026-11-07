@@ -121,7 +121,7 @@ function Suivi() {
             </div>
             <div className="mt-4 space-y-1 border-t pt-4 text-sm">
               <p className="break-words"><b>Lieu :</b> {order.delivery_location}</p>
-              <p><b>Heure prévue :</b> {order.order_type === "preorder" && order.scheduled_at ? new Date(order.scheduled_at).toLocaleString("fr-FR", { timeZone: "Africa/Lome", dateStyle: "short", timeStyle: "short" }) : "Immédiate"}</p>
+              <p><b>Heure prévue :</b> {order.order_type === "group" ? "Commande groupée · " : ""}{(order.order_type === "preorder" || order.order_type === "group") && order.scheduled_at ? new Date(order.scheduled_at).toLocaleString("fr-FR", { timeZone: "Africa/Lome", dateStyle: "short", timeStyle: "short" }) : "Immédiate"}</p>
               <p><b>Paiement :</b> {order.payment_method === "cash" ? "Cash à la livraison" : "Mobile money (Mixx)"}</p>
               <p className="text-base font-black">Total : {formatPrice(order.total)}</p>
             </div>
