@@ -1,3 +1,4 @@
+import type React from "react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { extrasSignature, unitPrice, type ChosenExtra } from "@/lib/extras";
 
@@ -23,7 +24,9 @@ type Cart = {
   setGroup: (g: boolean) => void;
 };
 
-const CartContext = createContext<Cart | null>(null);
+// Keep one context instance across hot reloads so the provider and consumers always match.
+const g = globalThis as { __dmiCartContext?: React.Context<Cart | null> };
+const CartContext = (g.__dmiCartContext ??= createContext<Cart | null>(null));
 
 export function formatPrice(n: number) {
   return `${n.toLocaleString("fr-FR")} FCFA`;
