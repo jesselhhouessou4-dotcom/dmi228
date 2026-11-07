@@ -29,16 +29,16 @@ export function GroupPricing() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const min = parseInt(form.min, 10), lead = parseInt(form.lead, 10), value = parseInt(form.value, 10);
-    if (isNaN(min) || min < 2 || min > 1000) return toast.error("Seuil entre 2 et 1000 articles");
-    if (isNaN(lead) || lead < 1 || lead > 720) return toast.error("Délai entre 1 et 720 heures");
-    if (isNaN(value) || value < 0 || (form.type === "percent" && value > 100)) return toast.error("Valeur de remise invalide");
+    if (isNaN(min) || min < 2 || min > 1000) { toast.error("Seuil entre 2 et 1000 articles"); return; }
+    if (isNaN(lead) || lead < 1 || lead > 720) { toast.error("Délai entre 1 et 720 heures"); return; }
+    if (isNaN(value) || value < 0 || (form.type === "percent" && value > 100)) { toast.error("Valeur de remise invalide"); return; }
     if (await update({ min_items: min, lead_hours: lead, discount_type: form.type, discount_value: value })) toast.success("Tarifs groupés enregistrés");
   };
   const setDishPrice = async (id: string, raw: string) => {
     const v = raw.trim() === "" ? null : parseInt(raw, 10);
-    if (v !== null && (isNaN(v) || v < 0)) return toast.error("Prix invalide");
+    if (v !== null && (isNaN(v) || v < 0)) { toast.error("Prix invalide"); return; }
     const { error } = await supabase.from("dishes").update({ group_price: v }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(v === null ? "Prix groupé retiré" : "Prix groupé enregistré");
     qc.invalidateQueries({ queryKey: ["dishes"] });
   };
