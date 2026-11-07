@@ -36,7 +36,9 @@ export const notifyNewOrder = createServerFn({ method: "POST" })
     const lines = items.map((i) => [`• ${i.quantity} × ${esc(i.name)}`, ...(i.extras ?? []).map((e) => `   + ${e.quantity} × ${esc(e.name)} (${e.price.toLocaleString("fr-FR")} FCFA)`)].join("\n")).join("\n");
     const text = [
       `🛎️ <b>Nouvelle commande ${esc(order.order_number ?? "")} !</b>`,
-      order.order_type === "preorder" && order.scheduled_at
+      order.order_type === "group" && order.scheduled_at
+        ? `👥 <b>COMMANDE GROUPÉE</b> — ${new Date(order.scheduled_at).toLocaleString("fr-FR", { timeZone: "Africa/Lome", dateStyle: "short", timeStyle: "short" })}`
+        : order.order_type === "preorder" && order.scheduled_at
         ? `⏰ <b>PRÉ-COMMANDE</b> — ${new Date(order.scheduled_at).toLocaleString("fr-FR", { timeZone: "Africa/Lome", dateStyle: "short", timeStyle: "short" })}`
         : "⚡ <b>IMMÉDIATE</b>",
       `👤 ${esc(order.customer_name)}`,
@@ -47,6 +49,7 @@ export const notifyNewOrder = createServerFn({ method: "POST" })
       lines,
       "",
       `<b>Total : ${order.total.toLocaleString("fr-FR")} FCFA</b>`,
+      order.discount_total ? `💰 Remise groupée : -${order.discount_total.toLocaleString("fr-FR")} FCFA` : "",
       order.note ? `📝 ${esc(order.note)}` : "",
     ].filter((l, i, a) => l !== "" || a[i - 1] !== "").join("\n");
 

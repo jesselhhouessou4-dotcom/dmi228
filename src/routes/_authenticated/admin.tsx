@@ -13,6 +13,7 @@ import { formatPrice } from "@/lib/cart";
 import { categoryLabel, type DishFormat } from "@/lib/dishes";
 import { useServerFn } from "@tanstack/react-start";
 import { notifyCancel } from "@/lib/telegram.functions";
+import { GroupPricing } from "@/components/admin/GroupPricing";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -39,6 +40,7 @@ type Order = {
   id: string; customer_name: string; delivery_time: string; delivery_location: string; payment_method: string;
   customer_phone: string | null; customer_email: string | null; order_type: string; scheduled_at: string | null;
   note: string | null; items: OrderItem[]; total: number; status: string; created_at: string;
+  is_group?: boolean; original_total?: number | null; discount_total?: number;
   order_number: string | null; cancel_reason: string | null; cancelled_by: string | null;
 };
 
@@ -90,6 +92,7 @@ function AdminPage() {
             <TabsTrigger value="dishes" className="rounded-full">Articles</TabsTrigger>
             <TabsTrigger value="extras" className="rounded-full">Suppléments</TabsTrigger>
             <TabsTrigger value="settings" className="rounded-full">Horaires</TabsTrigger>
+            <TabsTrigger value="group" className="rounded-full">Tarifs groupés</TabsTrigger>
             <TabsTrigger value="admins" className="rounded-full">Admins</TabsTrigger>
             <TabsTrigger value="customers" className="rounded-full">Clients</TabsTrigger>
           </TabsList>
@@ -97,6 +100,7 @@ function AdminPage() {
           <TabsContent value="dishes"><Dishes /></TabsContent>
           <TabsContent value="extras"><ExtrasAdmin /></TabsContent>
           <TabsContent value="settings"><Settings /></TabsContent>
+          <TabsContent value="group"><GroupPricing /></TabsContent>
           <TabsContent value="admins"><Admins myId={user.id} /></TabsContent>
           <TabsContent value="customers"><Customers /></TabsContent>
         </Tabs>
@@ -152,7 +156,7 @@ function Orders() {
       (fStatus === "all" || o.status === fStatus) &&
       (fType === "all" || o.order_type === fType) &&
       (!fDate || (o.scheduled_at ?? o.created_at).slice(0, 10) === fDate));
-    if (fType === "preorder") l = [...l].sort((a, b) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""));
+    if (fType === "preorder" || fType === "group") l = [...l].sort((a, b) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""));
     return l;
   }, [orders, fStatus, fType, fDate]);
 
@@ -186,6 +190,7 @@ function Orders() {
           <option value="all">Tous les types</option>
           <option value="immediate">Immédiates</option>
           <option value="preorder">Pré-commandes</option>
+          <option value="group">Groupées</option>
         </select>
         <input aria-label="Filtrer par date" type="date" value={fDate} onChange={(e) => setFDate(e.target.value)} className={sel} />
         {(fStatus !== "all" || fType !== "all" || fDate) && <button onClick={() => { setFStatus("all"); setFType("all"); setFDate(""); }} className="text-sm underline">Effacer</button>}
@@ -196,9 +201,9 @@ function Orders() {
             <div key={o.id} className={`rounded-[2rem] bg-card p-5 shadow-bubble ${o.status === "livrée" || o.status === "annulée" ? "opacity-60" : ""}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-black ${o.order_type === "preorder" ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground"}`}>
+                  {o.order_type === "group" ? <span className="inline-block rounded-full bg-destructive px-2 py-0.5 text-xs font-black text-destructive-foreground">👥 GROUPÉE{o.scheduled_at ? ` · ${fmtDate(o.scheduled_at)}` : ""}</span> : <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-black ${o.order_type === "preorder" ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground"}`}>
                     {o.order_type === "preorder" ? `PRÉ-COMMANDE${o.scheduled_at ? ` · ${fmtDate(o.scheduled_at)}` : ""}` : "IMMÉDIATE"}
-                  </span>
+                  </span>}
                   <p className="mt-1 truncate text-lg font-bold">{o.order_number ? `${o.order_number} · ` : ""}{o.customer_name}</p>
                   <p className="text-xs text-muted-foreground">Reçue le {fmtDate(o.created_at)}</p>
                   {o.status === "annulée" && <p className="text-xs font-bold text-destructive">Annulée par {o.cancelled_by === "client" ? "le client" : "l'équipe"}{o.cancel_reason ? ` — ${o.cancel_reason}` : ""}</p>}
@@ -216,7 +221,8 @@ function Orders() {
                 {o.customer_email && <p className="truncate"><b>E-mail :</b> {o.customer_email}</p>}
                 <p className="break-words"><b>Lieu :</b> {o.delivery_location}</p>
                 <p><b>Paiement :</b> {o.payment_method === "cash" ? "Cash à la livraison" : "Mobile money (Mixx)"}</p>
-                <p className="text-base font-bold">Total : {formatPrice(o.total)}</p>
+                <p className="text-base font-bold">Total : {o.discount_total ? <s className="mr-1 text-sm text-muted-foreground">{formatPrice(o.original_total ?? 0)}</s> : null}{formatPrice(o.total)}</p>
+                {!!o.discount_total && <p className="text-xs font-bold text-primary">Remise groupée : -{formatPrice(o.discount_total)}</p>}
               </div>
             </div>
           ))}

@@ -9,3 +9,4 @@
 - [x] Historique privé, suivi et recommandation, notifications de statut et générales.
 - [x] Suppléments : gestion admin, choix dans la fiche du plat, panier, total, alertes, suivi et historique.
 - [x] Liste des clients et envoi de messages admin ; vérification des accès et parcours complet.
+- [x] Commande groupée : seuil, délai, remise %/fixe, prix par produit, admin « Tarifs groupés », vérification serveur.

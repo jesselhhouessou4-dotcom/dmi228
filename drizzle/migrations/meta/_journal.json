@@ -99,6 +99,13 @@
       "when": 1793989145696,
       "tag": "0013_group_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794028782444,
+      "tag": "0014_allow_group_order_type",
+      "breakpoints": true
     }
   ]
 }
